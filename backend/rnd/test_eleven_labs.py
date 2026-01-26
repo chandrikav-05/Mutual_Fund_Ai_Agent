@@ -8,7 +8,7 @@ client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
 
 # Get raw response with headers
 with client.text_to_speech.with_raw_response.convert(
-    text="hello this is chandrika speaking . how can i assist to day regarding to the ",
+    text="hello hi....... ",
     voice_id="zgqefOY5FPQ3bB7OZTVR",
     model_id="eleven_multilingual_v2"
 ) as response:

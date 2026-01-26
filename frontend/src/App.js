@@ -7,6 +7,9 @@ function App() {
   const [isRinging, setIsRinging] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [ttsError, setTtsError] = useState(null);
+  const [userName, setUserName] = useState(null);
+  const userNameRef = useRef(null);
   const chatEndRef = useRef(null);
   const audioContextRef = useRef(null);
 
@@ -17,6 +20,16 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isListening]);
+
+  useEffect(() => {
+    // Pre-load voices to avoid female voice fallback on first message
+    window.speechSynthesis.getVoices();
+    const handleVoicesChanged = () => {
+      window.speechSynthesis.getVoices();
+    };
+    window.speechSynthesis.addEventListener("voiceschanged", handleVoicesChanged);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", handleVoicesChanged);
+  }, []);
 
   // Function to generate a phone ring sound using Web Audio API
   const playRingTone = async (count = 3) => {
@@ -58,41 +71,76 @@ function App() {
   const speak = async (text, callback) => {
     try {
       setIsSpeaking(true);
-      const res = await fetch("http://127.0.0.1:8000/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
+      setTtsError(null);
+      const encodedText = encodeURIComponent(text);
+      const url = `http://127.0.0.1:8000/tts?text=${encodedText}`;
 
-      if (!res.ok) throw new Error("ElevenLabs TTS failed");
+      const response = await fetch(url);
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
+      if (!response.ok) {
+        if (response.status === 402 || response.status === 401) {
+          setTtsError("ElevenLabs Quota Exceeded. Using local male voice.");
+        } else {
+          setTtsError(`TTS Error (${response.status})`);
+        }
+        throw new Error("TTS Failed");
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const audio = new Audio(blobUrl);
 
       audio.onended = () => {
         setIsSpeaking(false);
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(blobUrl);
         if (callback) callback();
       };
-
       await audio.play();
     } catch (error) {
       console.error("TTS Error:", error);
       setIsSpeaking(false);
-      // Fallback to browser voice if ElevenLabs fails
-      const u = new SpeechSynthesisUtterance(text);
-      u.onend = () => {
-        if (callback) callback();
-      };
-      window.speechSynthesis.speak(u);
+      fallbackToBrowser(text, callback);
     }
+  };
+
+  const fallbackToBrowser = (text, callback) => {
+    const u = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+
+    // Comprehensive male voice selection
+    const maleVoice = voices.find(v =>
+      v.name === "Alex" ||
+      v.name === "Daniel" ||
+      v.name.includes("Male") ||
+      v.name.includes("David") ||
+      v.name.includes("Mark") ||
+      (v.lang === "en-IN" && v.name.includes("Rishi")) ||
+      v.name.includes("English (UK)+Male")
+    );
+
+    if (maleVoice) {
+      u.voice = maleVoice;
+      // console.log("Using browser male voice:", maleVoice.name);
+    } else {
+      // If still no male voice found, try any English voice that might be neutral/male
+      const engVoice = voices.find(v => v.lang.startsWith("en"));
+      if (engVoice) u.voice = engVoice;
+    }
+
+    u.rate = 1.0;
+    u.pitch = 0.9; // Lower pitch slightly to sound more male if it's a neutral voice
+
+    u.onend = () => {
+      if (callback) callback();
+    };
+    window.speechSynthesis.speak(u);
   };
 
   const listen = () => {
     const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
     recognition.lang = "en-IN";
     recognition.interimResults = false;
+    recognition.continuous = false; // Stop automatically when user stops speaking
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -107,11 +155,16 @@ function App() {
         const res = await fetch("http://127.0.0.1:8000/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question: userText })
+          body: JSON.stringify({ question: userText, user_name: userNameRef.current })
         });
 
         const data = await res.json();
-        const aiAnswer = data.answer;
+        const aiAnswer = data.answer || "I'm sorry, I didn't catch that. Could you please repeat?";
+        if (data.user_name) {
+          setUserName(data.user_name);
+          userNameRef.current = data.user_name;
+        }
+
         setMessages((m) => [...m, { sender: "AI", text: aiAnswer }]);
 
         // Check if the AI is saying goodbye (look for definitive closing phrases)
@@ -156,8 +209,10 @@ function App() {
 
       setIsRinging(false);
       setStarted(true);
+      setUserName(null);
+      userNameRef.current = null;
 
-      const greeting = "Good morning. I'm Rudraksh calling from Outstrive Mutual Fund regarding your investment. Am I speaking with Chandrika?";
+      const greeting = "Good morning. I am Rudraksh calling from Outstrive Mutual Fund. May I know your good name please?";
       setMessages([{ sender: "AI", text: greeting }]);
 
       speak(greeting, () => {
@@ -190,6 +245,12 @@ function App() {
           <span className={`status-dot ${isListening || isSpeaking || isRinging ? 'active' : ''}`}></span>
           {isRinging ? "Calling..." : isSpeaking ? "AI Speaking" : isListening ? "Listening..." : "Ready"}
         </div>
+
+        {ttsError && (
+          <div className="error-badge" style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '10px', background: 'rgba(255,107,107,0.1)', padding: '4px 8px', borderRadius: '4px' }}>
+            {ttsError}
+          </div>
+        )}
 
         {(isSpeaking || isRinging) && (
           <div className="waveform">
