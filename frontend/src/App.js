@@ -68,18 +68,23 @@ function App() {
     }
   };
 
-  const speak = async (text, callback) => {
+  // Voice IDs matching the backend
+  const VOICE_MALE = "zgqefOY5FPQ3bB7OZTVR";
+  const VOICE_FEMALE = "21m00Tcm4TlvDq8ikWAM";
+
+  const speak = async (text, voiceId, callback) => {
     try {
       setIsSpeaking(true);
       setTtsError(null);
       const encodedText = encodeURIComponent(text);
-      const url = `http://127.0.0.1:8000/tts?text=${encodedText}`;
+      // Pass voice_id to the backend
+      const url = `http://127.0.0.1:8000/tts?text=${encodedText}&voice_id=${voiceId || VOICE_MALE}`;
 
       const response = await fetch(url);
 
       if (!response.ok) {
         if (response.status === 402 || response.status === 401) {
-          setTtsError("ElevenLabs Quota Exceeded. Using local male voice.");
+          setTtsError("ElevenLabs Quota Exceeded. Using local voice.");
         } else {
           setTtsError(`TTS Error (${response.status})`);
         }
@@ -99,40 +104,80 @@ function App() {
     } catch (error) {
       console.error("TTS Error:", error);
       setIsSpeaking(false);
-      fallbackToBrowser(text, callback);
+      fallbackToBrowser(text, voiceId, callback);
     }
   };
 
-  const fallbackToBrowser = (text, callback) => {
+  const fallbackToBrowser = (text, voiceId, callback) => {
     const u = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
 
-    // Comprehensive male voice selection
-    const maleVoice = voices.find(v =>
-      v.name === "Alex" ||
-      v.name === "Daniel" ||
-      v.name.includes("Male") ||
-      v.name.includes("David") ||
-      v.name.includes("Mark") ||
-      (v.lang === "en-IN" && v.name.includes("Rishi")) ||
-      v.name.includes("English (UK)+Male")
-    );
+    console.log("Fallback TTS triggered for voiceId:", voiceId);
 
-    if (maleVoice) {
-      u.voice = maleVoice;
-      // console.log("Using browser male voice:", maleVoice.name);
+    let targetVoice = null;
+
+    // Determine gender based on voiceId matching known Female IDs
+    const isFemale = voiceId === VOICE_FEMALE;
+
+    if (isFemale) {
+      // Find a female voice - Priorities: "Female" in name, specific known female names, or high-pitch defaults
+      targetVoice = voices.find(v =>
+        v.name.includes("Female") ||
+        v.name.includes("Samantha") ||
+        v.name.includes("Victoria") ||
+        v.name.includes("Susan") ||
+        v.name.includes("Zira") ||
+        v.name.includes("Google US English") ||
+        (v.name.includes("Google") && v.lang === "en-US") // Google voices often female default
+      );
+      if (!targetVoice) {
+        // Try to find any English voice that ISN'T explicitly male
+        targetVoice = voices.find(v =>
+          v.lang.startsWith("en") &&
+          !v.name.includes("Male") &&
+          !v.name.includes("David") &&
+          !v.name.includes("Alex")
+        );
+      }
     } else {
-      // If still no male voice found, try any English voice that might be neutral/male
+      // Find a male voice
+      targetVoice = voices.find(v =>
+        v.name === "Alex" ||
+        v.name === "Daniel" ||
+        v.name.includes("Male") ||
+        v.name.includes("David") ||
+        v.name.includes("Mark") ||
+        (v.lang === "en-IN" && v.name.includes("Rishi"))
+      );
+    }
+
+    if (targetVoice) {
+      u.voice = targetVoice;
+      console.log(`Using fallback voice: ${targetVoice.name}`);
+    } else {
+      // Last resort
       const engVoice = voices.find(v => v.lang.startsWith("en"));
       if (engVoice) u.voice = engVoice;
     }
 
     u.rate = 1.0;
-    u.pitch = 0.9; // Lower pitch slightly to sound more male if it's a neutral voice
+    // Force pitch shift if we wanted female but might have got a neutral/male voice
+    if (isFemale) {
+      u.pitch = 1.1;
+    } else {
+      u.pitch = 0.9;
+    }
 
     u.onend = () => {
       if (callback) callback();
     };
+
+    // Handle error where browser TTS fails immediately
+    u.onerror = (e) => {
+      console.error("Browser TTS Error:", e);
+      if (callback) callback();
+    };
+
     window.speechSynthesis.speak(u);
   };
 
@@ -140,7 +185,7 @@ function App() {
     const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
     recognition.lang = "en-IN";
     recognition.interimResults = false;
-    recognition.continuous = false; // Stop automatically when user stops speaking
+    recognition.continuous = false;
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -160,28 +205,56 @@ function App() {
 
         const data = await res.json();
         const aiAnswer = data.answer || "I'm sorry, I didn't catch that. Could you please repeat?";
+        const voiceId = data.voice_id || VOICE_MALE;
+
         if (data.user_name) {
           setUserName(data.user_name);
           userNameRef.current = data.user_name;
         }
 
-        setMessages((m) => [...m, { sender: "AI", text: aiAnswer }]);
+        if (aiAnswer.includes("|||")) {
+          // Handle split message (Handoff)
+          const parts = aiAnswer.split("|||");
+          const part1 = parts[0].trim();
+          const part2 = parts[1].trim();
 
-        // Check if the AI is saying goodbye (look for definitive closing phrases)
-        const lowerAnswer = aiAnswer.toLowerCase();
-        const isGoodbye = (lowerAnswer.includes("have a great day") ||
-          lowerAnswer.includes("have a good day") ||
-          lowerAnswer.includes("thank you for your time")) &&
-          !aiAnswer.includes("?");
+          // Part 1: Rudraksh/System (Transferring...)
+          setMessages((m) => [...m, { sender: "AI", text: part1 }]);
 
-        speak(aiAnswer, () => {
-          if (isGoodbye) {
-            setStarted(false);
-            setMessages((m) => [...m, { sender: "System", text: "📞 Call Disconnected" }]);
-          } else {
-            listen();
-          }
-        });
+          // Speak Part 1 with Male Voice
+          speak(part1, VOICE_MALE, () => {
+            // Wait 2 seconds
+            setTimeout(() => {
+              // Part 2: Isha (Hello...)
+              setMessages((m) => [...m, { sender: "Isha", text: part2 }]);
+
+              // Speak Part 2 with Female Voice
+              speak(part2, VOICE_FEMALE, () => {
+                listen();
+              });
+            }, 2000);
+          });
+
+        } else {
+          // Normal Flow
+          setMessages((m) => [...m, { sender: "AI", text: aiAnswer }]);
+
+          // Check if the AI is saying goodbye
+          const lowerAnswer = aiAnswer.toLowerCase();
+          const isGoodbye = (lowerAnswer.includes("have a wonderful day") ||
+            lowerAnswer.includes("call disconnected")) &&
+            !aiAnswer.includes("?");
+
+          // Pass the received voiceId to speak
+          speak(aiAnswer, voiceId, () => {
+            if (isGoodbye) {
+              setStarted(false);
+              setMessages((m) => [...m, { sender: "System", text: "📞 Call Disconnected" }]);
+            } else {
+              listen();
+            }
+          });
+        }
       } catch (error) {
         console.error("Error fetching AI response:", error);
       }
@@ -205,17 +278,18 @@ function App() {
       setIsRinging(true);
 
       // Simulate phone ringing
-      await playRingTone(2); // Ring twice
+      await playRingTone(2);
 
       setIsRinging(false);
       setStarted(true);
       setUserName(null);
       userNameRef.current = null;
 
-      const greeting = "Good morning. I am Rudraksh calling from Outstrive Mutual Fund. May I know your good name please?";
+      const greeting = "Good morning. This is Rudraksh calling from Outstrive Mutual Fund. May i know your good name please.";
       setMessages([{ sender: "AI", text: greeting }]);
 
-      speak(greeting, () => {
+      // Use Male voice for greeting
+      speak(greeting, VOICE_MALE, () => {
         listen();
       });
     } else if (started && !isListening && !isSpeaking) {
