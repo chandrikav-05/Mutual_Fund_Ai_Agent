@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
+import { Badge } from '../ui/badge';
 
 interface Message {
     id: string;
@@ -82,12 +83,12 @@ export function ResponseCard({ text, userInput }: ResponseCardProps) {
             <div className="flex items-start gap-4 mb-2 shrink-0">
                 <div className="w-12 h-12 bg-linear-to-br from-[#1068EB] to-[#0A54D1] rounded-lg flex items-center justify-center shadow-lg shadow-blue-100 shrink-0">
                     <svg width="24" height="24" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M8.42811 5.61781V2.80884H5.61914" stroke="white" strokeWidth="1.40448" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M12.6419 5.61792H4.21503C3.43936 5.61792 2.81055 6.24673 2.81055 7.0224V12.6403C2.81055 13.416 3.43936 14.0448 4.21503 14.0448H12.6419C13.4176 14.0448 14.0464 13.416 14.0464 12.6403V7.0224C14.0464 6.24673 13.4176 5.61792 12.6419 5.61792Z" stroke="white" strokeWidth="1.40448" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M1.40527 9.83154H2.80976" stroke="white" strokeWidth="1.40448" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M14.0459 9.83154H15.4504" stroke="white" strokeWidth="1.40448" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M10.5342 9.12891V10.5334" stroke="white" strokeWidth="1.40448" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M6.32031 9.12891V10.5334" stroke="white" strokeWidth="1.40448" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M8.42811 5.61781V2.80884H5.61914" stroke="white" stroke-width="1.40448" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M12.6419 5.61792H4.21503C3.43936 5.61792 2.81055 6.24673 2.81055 7.0224V12.6403C2.81055 13.416 3.43936 14.0448 4.21503 14.0448H12.6419C13.4176 14.0448 14.0464 13.416 14.0464 12.6403V7.0224C14.0464 6.24673 13.4176 5.61792 12.6419 5.61792Z" stroke="white" stroke-width="1.40448" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M1.40527 9.83154H2.80976" stroke="white" stroke-width="1.40448" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M14.0459 9.83154H15.4504" stroke="white" stroke-width="1.40448" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M10.5342 9.12891V10.5334" stroke="white" stroke-width="1.40448" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M6.32031 9.12891V10.5334" stroke="white" stroke-width="1.40448" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                 </div>
                 <div className="flex flex-col py-1 gap-0.5 text-left">
@@ -120,28 +121,32 @@ export function ResponseCard({ text, userInput }: ResponseCardProps) {
 
                 <div className="relative flex-1 z-10 w-full overflow-hidden">
                     <div className="flex flex-col gap-10 h-full">
-                        <AnimatePresence initial={false} mode="popLayout">
+                        <AnimatePresence initial={false} mode="wait">
                             {visibleMessages.length > 0 ? (
                                 visibleMessages.map((msg, index) => (
                                     <motion.div
                                         key={msg.id}
                                         layout
                                         initial={{ opacity: 0, y: 40 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{
-                                            opacity: 0,
-                                            y: -80,
+                                        animate={{
+                                            opacity: 1,
+                                            y: 0,
                                             transition: {
-                                                duration: 0.8,
-                                                delay: index * 0.2, // Staggered exit: first message goes first
-                                                ease: "easeInOut"
+                                                type: "spring",
+                                                stiffness: 150,
+                                                damping: 20,
+                                                delay: index * 0.15, // Staggered enter: messages appear one after another
+                                                opacity: { duration: 0.4, delay: index * 0.15 }
                                             }
                                         }}
-                                        transition={{
-                                            type: "spring",
-                                            stiffness: 150,
-                                            damping: 20,
-                                            opacity: { duration: 0.5 }
+                                        exit={{
+                                            opacity: 0,
+                                            y: -60,
+                                            transition: {
+                                                duration: 0.4,
+                                                delay: index * 0.15, // Staggered exit: first message goes first
+                                                ease: "easeOut"
+                                            }
                                         }}
                                         className="space-y-3 shrink-0"
                                     >
@@ -193,5 +198,4 @@ export function ResponseCard({ text, userInput }: ResponseCardProps) {
     );
 }
 
-import { cn } from '@/lib/utils';import { Badge } from '../ui/badge';
-
+import { cn } from '@/lib/utils';
