@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Badge } from '../ui/badge';
+import { useState, useEffect, useRef } from 'react';
 
 interface Message {
     id: string;
@@ -12,7 +13,34 @@ interface ResponseCardProps {
     userInput: string;
 }
 
-import { useState, useEffect, useRef } from 'react';
+// Typewriter component that reveals text character by character to match speech pace
+function TypewriterText({
+    text,
+    renderHighlighted,
+    charDelay = 40 // ~40ms per character matches typical speech pace (~150 WPM)
+}: {
+    text: string;
+    renderHighlighted: (content: string) => React.ReactNode;
+    charDelay?: number;
+}) {
+    const [displayedLength, setDisplayedLength] = useState(0);
+
+    // Animate character by character with setTimeout
+    useEffect(() => {
+        if (displayedLength < text.length) {
+            const timer = setTimeout(() => {
+                setDisplayedLength(prev => Math.min(prev + 1, text.length));
+            }, charDelay);
+            return () => clearTimeout(timer);
+        }
+    }, [displayedLength, text.length, charDelay]);
+
+    // Handle streaming text - if text grows, keep animating from current position
+    // If text completely changes (shrinks or different content), the key prop on the component should reset it
+    const visibleText = text.slice(0, displayedLength);
+
+    return <>{renderHighlighted(visibleText)}</>;
+}
 
 export function ResponseCard({ text, userInput }: ResponseCardProps) {
     const [turnId, setTurnId] = useState(0);
@@ -157,7 +185,14 @@ export function ResponseCard({ text, userInput }: ResponseCardProps) {
                                             {msg.role === 'agent' ? 'AI AGENT:' : 'CUSTOMER:'}
                                         </span>
                                         <div className="text-[14px] text-[#0F172A] leading-relaxed font-medium wrap-break-word min-h-[1.5em]">
-                                            {msg.role === 'agent' ? renderHighlightedText(msg.text) : msg.text}
+                                            {msg.role === 'agent' ? (
+                                                <TypewriterText
+                                                    key={msg.id}
+                                                    text={msg.text}
+                                                    renderHighlighted={renderHighlightedText}
+                                                    charDelay={35}
+                                                />
+                                            ) : msg.text}
                                         </div>
                                     </motion.div>
                                 ))
