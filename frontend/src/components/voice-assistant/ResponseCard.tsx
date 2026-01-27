@@ -181,16 +181,9 @@ export function ResponseCard({ text, userInput }: ResponseCardProps) {
                 </div>
 
                 {/* Footer Section */}
-                <div className="relative z-10 mt-auto pt-8 flex items-center justify-between shrink-0">
+                <div className="relative z-10 mt-auto pt-8 flex items-center justify-end shrink-0">
                     <div className="bg-[#1C64F2] text-white px-5 py-2.5 rounded-2xl text-sm font-normal shadow-lg shadow-blue-100/50">
                         Real-time AI Conversation
-                    </div>
-
-                    <div className="flex gap-2">
-                        <div className="w-8 h-1.5 rounded-full bg-[#1C64F2]" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
                     </div>
                 </div>
             </div>
