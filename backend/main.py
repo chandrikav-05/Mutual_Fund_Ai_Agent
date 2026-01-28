@@ -12,8 +12,12 @@ import string
 load_dotenv()
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-VOICE_MALE = "zgqefOY5FPQ3bB7OZTVR"
+VOICE_MALE = "zgqefOY5FPQ3bB7OZTVR" # Tested Male Voice
 VOICE_FEMALE = "21m00Tcm4TlvDq8ikWAM" # Rachel
+
+# Global state to track conversation phase
+# Phases: "rudraksh" -> "transition" -> "isha"
+CONVERSATION_STATE = "rudraksh"
 
 client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
@@ -34,47 +38,46 @@ class UserQuery(BaseModel):
 # Script dictionary now stores objects with text and optional voice
 # If voice is None, it defaults to Male (Rudraksh)
 SCRIPT = {
+
     # Phase 1: Identity & Greeting
-    # Greeting happens in frontend. 
-    # User says: "Yes this is Chandrika" or "My name is Chandrika"
-    "chandrika": {
-        "text": "Hi {name}. Is this a good time to talk about your stopped SIP?",
+    "Yeah": {
+        "text": "Hi Chandrika. Is this a good time to talk about your stopped SIP?",
         "voice": VOICE_MALE
     },
-    "my name is": {
-        "text": "Hi {name}. Is this a good time to talk about your stopped SIP?",
+    "Yeah You are speaking with Chandrika": {
+        "text": "Hi Chandrika. Is this a good time to talk about your stopped SIP?",
         "voice": VOICE_MALE
     },
-    "yes this is": {
-        "text": "Hi {name}. Is this a good time to talk about your stopped SIP?",
-        "voice": VOICE_MALE
-    },
-    
-    # Phase 2: SIP Details
-    # User says: "Yes it is"
-    "yes it is": {
-        "text": "Thank you. I see that your SIP of ₹5,000 in the Outstrive Large and Mid Cap Fund was stopped on 30th June 2025 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
+    "Yeah this is Chandrika ": {
+        "text": "Hi Chandrika. Is this a good time to talk about your stopped SIP?",
         "voice": VOICE_MALE
     },
 
+    # Phase 2: SIP Details
+    "yes it is": {
+        "text": "Thank you. I see that your SIP of ₹5,000 in the Outstrive Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
+        "voice": VOICE_MALE
+    },
+    "yes , you can go ahead": {
+        "text": "Thank you. I see that your SIP of ₹5,000 in the Outstrive Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
+        "voice": VOICE_MALE
+    },
     "yes": {
-        "text": "Thank you. I see that your SIP of ₹5,000 in the Outstrive Large and Mid Cap Fund was stopped on 30th June 2025 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
+        "text": "Thank you. I see that your SIP of ₹5,000 in the Outstrive Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
         "voice": VOICE_MALE
     },
 
     # Phase 3: Performance
-    # User: "can you tell me the five-year performance"
     "fiveyear performance": {
-        "text": "Sure, {name}. The Outstrive Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
+        "text": "Sure, Chandrika. The Outstrive Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
         "voice": VOICE_MALE
     },
     "performance of this fund": {
-        "text": "Sure, {name}. The Outstrive Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
+        "text": "Sure, Chandrika. The Outstrive Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
         "voice": VOICE_MALE
     },
 
-    # Phase 4: Better returns
-    # User: "Which funds have given better returns"
+    # Phase 4: Better Returns
     "better returns": {
         "text": "Good question. Some Outstrive funds have performed even better. For example, the Outstrive Mid Cap Fund has delivered an average return of about 32% over five years, and the Outstrive Small Cap Fund has given approximately 35% during the same period.",
         "voice": VOICE_MALE
@@ -85,18 +88,16 @@ SCRIPT = {
     },
 
     # Phase 5: Split Investment
-    # User: "split it between... 2500 in each"
     "split it": {
-        "text": "Yes, {name}. Just to confirm, you want to invest ₹2,500 in the Outstrive Small Cap Fund and ₹2,500 in the Outstrive Mid Cap Fund as a monthly SIP, correct?",
+        "text": "Yes, Chandrika. Just to confirm, you want to invest ₹2,500 in the Outstrive Small Cap Fund and ₹2,500 in the Outstrive Mid Cap Fund as a monthly SIP, correct?",
         "voice": VOICE_MALE
     },
     "2500 in each": {
-        "text": "Yes, {name}. Just to confirm, you want to invest ₹2,500 in the Outstrive Small Cap Fund and ₹2,500 in the Outstrive Mid Cap Fund as a monthly SIP, correct?",
+        "text": "Yes, Chandrika. Just to confirm, you want to invest ₹2,500 in the Outstrive Small Cap Fund and ₹2,500 in the Outstrive Mid Cap Fund as a monthly SIP, correct?",
         "voice": VOICE_MALE
     },
 
     # Phase 6: Confirmation
-    # User: "Yes that's right"
     "yes thats right": {
         "text": "Great. Are you a direct investor, or do you invest through a distributor or financial advisor?",
         "voice": VOICE_MALE
@@ -107,96 +108,62 @@ SCRIPT = {
     },
 
     # Phase 7: Direct Investor
-    # User: "I am a direct investor"
     "direct investor": {
         "text": "Perfect. I will go ahead and start the process of re-initiating your SIP. I have placed the request to start a SIP of ₹2,500 in the Outstrive Small Cap Fund and ₹2,500 in the Outstrive Mid Cap Fund. I will also send these details clearly to your WhatsApp or email. Please check them and confirm once you receive them.",
         "voice": VOICE_MALE
     },
 
-    # Phase 8: Power of Compounding (User asks "Okay" then "Can you explain power of compounding")
-    # Note: User says "Okay" after the previous message.
-    # If user says "Okay", we might need to wait or prompt?
-    # Actually script says:
-    # Rudraksh: "...confirm once you receive them."
-    # Chandrika: "Okay."
-    # Chandrika: "Can you explain what the 'power of compounding' is?"
-    # So we need a response for "power of compounding"
+    # NEW Phase 7A: WhatsApp Confirmation
+    "i have received": {
+        "text": "Thank you, Chandrika. Just a quick reminder — mutual fund investments are subject to market risks. Please read all scheme-related documents carefully.",
+        "voice": VOICE_MALE
+    },
+    "received the details": {
+        "text": "Thank you, Chandrika. Just a quick reminder — mutual fund investments are subject to market risks. Please read all scheme-related documents carefully.",
+        "voice": VOICE_MALE
+    },
+
+    # NEW Phase 7B: User confirms disclaimer
+    "i will go through them and confirm": {
+        "text": "If you have any other questions regarding this SIP reactivation, please feel free to ask me.",
+        "voice": VOICE_MALE
+    },
+    "i will confirm": {
+        "text": "If you have any other questions regarding this SIP reactivation, please feel free to ask me.",
+        "voice": VOICE_MALE
+    },
+
+    # Phase 8: Power of Compounding
     "power of compounding": {
-        "text": "Sure. The power of compounding means your investment earns returns, and then those returns also start earning more returns. Over time, this creates exponential growth instead of linear growth. This is why staying invested for longer periods helps build significant wealth. If you have any other questions regarding this SIP reactivation, please feel free to ask me.",
+        "text": "Sure. The power of compounding means your investment earns returns, and then those returns also start earning more returns. Over time, this creates exponential growth instead of linear growth. This is why staying invested for longer periods helps build significant wealth. Anything else you want to ask?",
         "voice": VOICE_MALE
     },
 
     # Phase 9: Handoff
-    # User: "No, nothing else"
     "nothing else": {
-        "text": "Alright, {name}. I will now connect this call to one of our certified human wealth advisors who will register your details and complete the SIP activation.",
+        "text": "Alright, Chandrika. I will now connect this call to one of our AI wealth advisors who will register your details and complete the SIP activation.",
         "voice": VOICE_MALE
     },
-    "no questions": {
-        "text": "Alright, {name}. I will now connect this call to one of our certified human wealth advisors who will register your details and complete the SIP activation.",
-        "voice": VOICE_MALE
-    },
-    "no thank you": { # This might overlap with Isha's end, but Rudraksh also asks "any other questions"
-         "text": "Alright, {name}. I will now connect this call to one of our certified human wealth advisors who will register your details and complete the SIP activation.",
+    "no nothing else": {
+        "text": "Alright, Chandrika. I will now connect this call to one of our AI wealth advisors who will register your details and complete the SIP activation.",
         "voice": VOICE_MALE
     },
 
-    # Phase 10: Human Agent (System + Isha)
-    # User: "Okay" (after Rudraksh says he will connect)
-    # This is tricky. "Okay" is a common word.
-    # We might need to context switch.
-    # We can try to match "Okay" specifically, OR since this is a demo, we can assume "Okay" after the Handoff line triggers this.
-    # But we don't track state easily here.
-    # Let's map "Okay" to this response generally if it appears, OR make a unique key.
-    # Actually, the user might just say "Okay".
-    # Let's fallback "Okay" to this if we assume the flow is linear, but it's not.
-    # Let's add a specific key for "connect to human" state if possible? No.
-    # Let's just make "Okay" return a generic response unless we find a way to distinguish.
-    # WAIT: The script has "System Message" then "Human Agent".
-    # We can handle this by returning a combined string or just Isha's part?
-    # "Please stay on the line. Your call is being transferred to a human agent. [PAUSE] Hello Chandrika, this is Isha..."
-    # We can combine them into one audio generation or text block.
-    # Let's put this under a trigger "transfer accepted" or just "Okay".
-    # Since "Okay" is ambiguous, we'll try to rely on the sequence. 
-    # But since the backend is stateless, "Okay" is hard.
-    # Maybe we can match "Okay" to a safe response, but for the DEMO to work, we need to trigger Isha.
-    # Let's assume the user will say "Okay" at the end.
-    
-    # Let's add a specific trigger "Okay" that checks if we are at the end? No state.
-    # Let's just overwrite "Okay" to be the transfer for the sake of the demo, OR
-    # use "Ready" or "Connect" or just trust the user will follow the script.
-    # The user script says:
-    # Rudraksh: "I will now connect..."
-    # Chandrika: "Okay"
-    # System: "Please stay..."
-    
-    # Phase 9: Handoff - Pre-transition
-    # Rudraksh: "I will now connect this call..."
-    # User validates with "Okay", "Sure", "Go ahead", etc.
-    
+    # Phase 10: Transfer → Isha
     "okay": {
-        "text": "Please stay on the line. Your call is being transferred to an ai agent , who confirms your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
-        "voice": VOICE_FEMALE 
+        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
+        "voice": VOICE_FEMALE
     },
     "ok": {
-        "text": "Please stay on the line. Your call is being transferred to an ai agent , who confirms your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
-        "voice": VOICE_FEMALE 
+        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
+        "voice": VOICE_FEMALE
     },
     "sure": {
-        "text": "Please stay on the line. Your call is being transferred to an ai agent , who confirms your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
-        "voice": VOICE_FEMALE 
-    },
-    "go ahead": {
-         "text": "Please stay on the line. Your call is being transferred to an ai agent , who confirms your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
-        "voice": VOICE_FEMALE 
-    },
-    "connect me": {
-         "text": "Please stay on the line. Your call is being transferred to an ai agent , who confirms your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
-        "voice": VOICE_FEMALE 
+        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
+        "voice": VOICE_FEMALE
     },
 
     # Phase 11: Isha Conversation
-    # User: "Hi Isha, I'm good. How are you?"
     "i am good": {
         "text": "I’m doing well, thank you. And congratulations on restarting your SIPs with Outstrive Mutual Fund.",
         "voice": VOICE_FEMALE
@@ -205,19 +172,13 @@ SCRIPT = {
         "text": "I’m doing well, thank you. And congratulations on restarting your SIPs with Outstrive Mutual Fund.",
         "voice": VOICE_FEMALE
     },
-    "how are you": {
-        "text": "I’m doing well, thank you. And congratulations on restarting your SIPs with Outstrive Mutual Fund.",
-        "voice": VOICE_FEMALE
-    },
-    
-    # User: "Thank you, Isha."
+
     "thank you isha": {
         "text": "I will now register and update your details to activate your SIPs. Do you have any other questions for me?",
         "voice": VOICE_FEMALE
     },
 
-    # User: "No, thank you." (End)
-    "no queries": {
+    "no": {
         "text": "Perfect. Your SIP requests will be processed shortly. Thank you for choosing Outstrive Mutual Fund, and have a wonderful day.",
         "voice": VOICE_FEMALE
     },
@@ -225,11 +186,6 @@ SCRIPT = {
         "text": "Perfect. Your SIP requests will be processed shortly. Thank you for choosing Outstrive Mutual Fund, and have a wonderful day.",
         "voice": VOICE_FEMALE
     }
-}
-
-SCRIPT["no thank you"] = {
-    "text": "Perfect. Your SIP requests will be processed shortly. Thank you for choosing Outstrive Mutual Fund, and have a wonderful day.",
-    "voice": VOICE_FEMALE
 }
 
 
@@ -243,6 +199,8 @@ SORTED_KEYS = sorted(NORMALIZED_SCRIPT.keys(), key=len, reverse=True)
 
 @app.post("/chat")
 def chat(user: UserQuery):
+    global CONVERSATION_STATE
+
     processed_input = normalize(user.question)
     
     # Logic to extract name from input
@@ -281,16 +239,28 @@ def chat(user: UserQuery):
     # Determine current_name: Extracted > Existing > Default
     current_name = extracted_name if extracted_name else (user.user_name if user.user_name else "Chandrika")
     
+    # Reset state if starting conversation or direct override
+    if "my name is" in processed_input or "yes this is" in processed_input or "start" in processed_input:
+        CONVERSATION_STATE = "rudraksh"
+
+    # Handle ambiguous inputs based on state
+    lookup_key = processed_input
+    if "no thank you" in processed_input or processed_input == "no":
+        if CONVERSATION_STATE == "rudraksh":
+            lookup_key = "nothing else"
+        else:
+            lookup_key = "no queries"
+
     response_obj = None
 
-    # Priority 1: Exact Match
-    if processed_input in NORMALIZED_SCRIPT:
-        response_obj = NORMALIZED_SCRIPT[processed_input]
+    # Priority 1: Exact Match (using lookup_key)
+    if lookup_key in NORMALIZED_SCRIPT:
+        response_obj = NORMALIZED_SCRIPT[lookup_key]
 
     # Priority 2: Keyword Match
     if not response_obj:
         for key in SORTED_KEYS:
-            if key in processed_input:
+            if key in processed_input: # Use original input for partial match
                 response_obj = NORMALIZED_SCRIPT[key]
                 break
     
@@ -305,19 +275,27 @@ def chat(user: UserQuery):
          # If the user is just confirming (e.g. "Okay"), but we missed it in exact match?
          # Check for very short inputs that might be confirmations
          if len(processed_input.split()) <= 2 and ("ok" in processed_input or "yes" in processed_input):
+             # Default behavior for 'ok' missed cases
              pass
-             # Default to the handoff if we are deep in conversation? 
-             # Stateless is hard. We'll rely on the specific triggers added above.
-             pass
-
+         
          response_obj = {
              "text": "I'm sorry, I didn't quite catch that. Could you please repeat?",
-             "voice": VOICE_MALE
+             "voice": VOICE_MALE if CONVERSATION_STATE == "rudraksh" else VOICE_FEMALE
          }
 
     # Format text
     final_text = response_obj["text"].format(name=current_name)
     voice_id = response_obj.get("voice", VOICE_MALE)
+    
+    # Update State Logic
+    # Transition to 'transition' phase if Rudraksh handoff line is triggered
+    if lookup_key in ["nothing else", "no questions"] and CONVERSATION_STATE == "rudraksh":
+        CONVERSATION_STATE = "transition"
+    
+    # Transition to 'isha' phase if Transfer line is triggered
+    # Triggers for transfer: "okay", "ok", "sure", "go ahead", "connect me"
+    elif lookup_key in ["okay", "ok", "sure", "go ahead", "connect me"] and CONVERSATION_STATE == "transition":
+        CONVERSATION_STATE = "isha"
 
     return {
         "answer": final_text,

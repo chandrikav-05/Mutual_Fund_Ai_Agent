@@ -59,7 +59,7 @@ interface SpeechRecognitionInstance {
 }
 
 interface SpeechRecognitionConstructor {
-  new (): SpeechRecognitionInstance;
+  new(): SpeechRecognitionInstance;
 }
 
 // Clean transcript helper - defined outside hook for hoisting
@@ -139,22 +139,24 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
         voices[0];
 
       // Male voice for user
+      const maleVoiceCandidates = [
+        "Google US English Male",
+        "Google UK English Male",
+        "Microsoft David",
+        "Daniel",
+        "Alex",
+        "Fred",
+        "Evan",
+        "Nathan",
+        "Rishi"
+      ];
+
       maleVoiceRef.current =
-        voices.find((v: SpeechSynthesisVoice) => v.name === "Evan") ||
-        voices.find((v: SpeechSynthesisVoice) => v.name === "Nathan") ||
-        voices.find((v: SpeechSynthesisVoice) => v.name === "Rishi") ||
-        voices.find(
-          (v: SpeechSynthesisVoice) =>
-            v.name.includes("Google") && v.name.includes("Male"),
-        ) ||
-        voices.find((v: SpeechSynthesisVoice) => v.name.includes("Daniel")) ||
-        voices.find((v: SpeechSynthesisVoice) => v.name.includes("Male")) ||
-        availableVoices.find(
-          (v: SpeechSynthesisVoice) =>
-            v.name !== selectedVoiceRef.current?.name,
-        ) ||
-        availableVoices[1] ||
-        selectedVoiceRef.current;
+        voices.find(v => maleVoiceCandidates.includes(v.name)) ||
+        voices.find(v => v.name.includes("Male")) ||
+        // Fallback to any voice that is NOT the selected female agent voice
+        voices.find(v => v.name !== selectedVoiceRef.current?.name && v.lang.startsWith("en")) ||
+        voices[0];
 
       console.log("Agent Voice:", selectedVoiceRef.current?.name);
       console.log("User Voice:", maleVoiceRef.current?.name);
@@ -335,7 +337,7 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
       synthesisRef.current.cancel();
     }
     if (audioContextRef.current) {
-      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current.close().catch(() => { });
       audioContextRef.current = null;
     }
     setState((prev) => ({ ...prev, isSpeaking: false }));
@@ -387,7 +389,7 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
           if (audioContextRef.current === ctx) {
             oscillator1.stop();
             oscillator2.stop();
-            ctx.close().catch(() => {});
+            ctx.close().catch(() => { });
             audioContextRef.current = null;
           }
           resolve();

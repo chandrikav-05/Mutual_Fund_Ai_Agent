@@ -40,6 +40,8 @@ apiClient.interceptors.response.use(
 
 export interface ChatResponse {
   answer: string;
+  voice_id?: string;
+  user_name?: string;
 }
 
 export interface SimulateUserResponse {

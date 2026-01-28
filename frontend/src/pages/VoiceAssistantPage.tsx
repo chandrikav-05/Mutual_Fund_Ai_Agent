@@ -140,7 +140,8 @@ export function VoiceAssistantPage() {
                 setInputValue('');
                 setOrbStatus('Speaking...');
                 setAppState('speaking');
-                await voiceEngineRef.current?.speak(data.answer, 'female');
+                const gender = data.voice_id === "zgqefOY5FPQ3bB7OZTVR" ? 'male' : 'female';
+                await voiceEngineRef.current?.speak(data.answer, gender);
 
                 // If call was ended while speaking, don't continue
                 if (!isCallActiveRef.current) return;
@@ -178,11 +179,11 @@ export function VoiceAssistantPage() {
             await voiceEngineRef.current?.playRingbackTone();
 
             // Initial greeting message
-            const greeting = "Good morning. I'm Rudraksh calling from Outstrive Mutual Fund regarding your investment. Am I speaking with Chandrika?";
+            const greeting = "Good morning. I'm Rudraksh calling from Outstrive Mutual Fund regarding your investment. Am i Speaking with Chandrika?";
             typeWriter(greeting);
             setOrbStatus('Speaking...');
             setAppState('speaking');
-            await voiceEngineRef.current?.speak(greeting, 'female');
+            await voiceEngineRef.current?.speak(greeting, 'male');
 
             // If call was ended while speaking, don't continue
             if (!isCallActiveRef.current) return;
@@ -263,6 +264,7 @@ export function VoiceAssistantPage() {
                             <div className="flex-1 flex flex-col items-center justify-center">
                                 <VoiceOrb
                                     isActive={isActive}
+                                    isSpeaking={isSpeaking}
                                     onClick={() => !isActive && toggleCall()}
                                 />
 

@@ -3,18 +3,20 @@ import { cn } from '@/lib/utils';
 
 interface VoiceOrbProps {
     isActive: boolean;
+    isSpeaking?: boolean;
     onClick: () => void;
 }
 
 export function VoiceOrb({
     isActive,
+    isSpeaking = false,
     onClick
 }: VoiceOrbProps) {
     return (
         <div className="flex items-center justify-center py-8">
             <div className="relative">
-                {/* Pulsing Rings */}
-                {isActive && [1, 2, 3].map((i) => (
+                {/* Pulsing Rings - Only animate when AI is speaking */}
+                {isSpeaking && [1, 2, 3].map((i) => (
                     <motion.div
                         key={i}
                         className="absolute inset-0 -m-8 rounded-full border border-[#51A2FF]"

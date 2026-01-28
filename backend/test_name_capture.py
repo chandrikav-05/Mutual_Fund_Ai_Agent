@@ -19,7 +19,7 @@ if __name__ == "__main__":
     print("Testing Name Capture Flow...")
     
     # Test 1: Explicit name extraction
-    name = test_chat("My name is Chandrika")
+    name = test_chat("This is Chandrika Speaking")
     
     # Test 2: Use stored name in next question
     test_chat("Yes, you can go ahead.", name)
