@@ -135,6 +135,34 @@ export function VoiceAssistantPage() {
         setOrbStatus('Processing...');
         try {
             const data = await sendChatMessage(text);
+
+            if (!isCallActiveRef.current) return;
+
+            // Handle announcement (transfer scenario)
+            if (data.announcement) {
+                // Step 1: Show and speak the announcement
+                setResponseText(data.announcement);
+                setInputValue('');
+                setOrbStatus('Transferring...');
+                setAppState('speaking');
+
+                // Speak the announcement with male voice (Rudraksh)
+                await voiceEngineRef.current?.speak(data.announcement, 'male');
+
+                if (!isCallActiveRef.current) return;
+
+                // Step 2: Brief pause and clear for transition effect
+                setResponseText('');
+                setOrbStatus('Connecting to advisor...');
+                setAppState('processing');
+
+                // Wait 1.5 seconds for visual transition
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                if (!isCallActiveRef.current) return;
+            }
+
+            // Step 3: Show and speak the main message (Isha's greeting after announcement, or regular response)
             if (data.answer && isCallActiveRef.current) {
                 typeWriter(data.answer);
                 setInputValue('');
@@ -257,7 +285,7 @@ export function VoiceAssistantPage() {
                             {/* Contact Header */}
                             <div className="flex flex-col items-center mt-20 mb-0">
                                 <span className="text-[12px] font-bold text-gray-400 tracking-widest uppercase mb-1">AT&T</span>
-                                <span className="text-lg font-medium tracking-tight text-gray-800">+1 (803) 573-8363</span>
+                                <span className="text-lg font-medium tracking-tight text-gray-800">+91 9968579006</span>
                             </div>
 
                             {/* Main Content Area */}

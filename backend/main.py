@@ -40,15 +40,15 @@ class UserQuery(BaseModel):
 SCRIPT = {
 
     # Phase 1: Identity & Greeting
-    "Yeah": {
+    "Yes": {
         "text": "Hi Chandrika. Is this a good time to talk about your stopped SIP?",
         "voice": VOICE_MALE
     },
-    "Yeah You are speaking with Chandrika": {
+    "Yes You are speaking with Chandrika": {
         "text": "Hi Chandrika. Is this a good time to talk about your stopped SIP?",
         "voice": VOICE_MALE
     },
-    "Yeah this is Chandrika ": {
+    "Yes this is Chandrika ": {
         "text": "Hi Chandrika. Is this a good time to talk about your stopped SIP?",
         "voice": VOICE_MALE
     },
@@ -284,8 +284,17 @@ def chat(user: UserQuery):
          }
 
     # Format text
-    final_text = response_obj["text"].format(name=current_name)
+    raw_text = response_obj["text"].format(name=current_name)
     voice_id = response_obj.get("voice", VOICE_MALE)
+    
+    # Check for transfer message with announcement separator |||
+    announcement = None
+    main_message = raw_text
+    
+    if "|||" in raw_text:
+        parts = raw_text.split("|||")
+        announcement = parts[0].strip()
+        main_message = parts[1].strip() if len(parts) > 1 else ""
     
     # Update State Logic
     # Transition to 'transition' phase if Rudraksh handoff line is triggered
@@ -297,11 +306,18 @@ def chat(user: UserQuery):
     elif lookup_key in ["okay", "ok", "sure", "go ahead", "connect me"] and CONVERSATION_STATE == "transition":
         CONVERSATION_STATE = "isha"
 
-    return {
-        "answer": final_text,
+    response_data = {
+        "answer": main_message,
         "user_name": current_name,
         "voice_id": voice_id
     }
+    
+    # Add announcement if present (for transfer scenarios)
+    if announcement:
+        response_data["announcement"] = announcement
+        response_data["announcement_voice_id"] = VOICE_MALE  # Rudraksh announces the transfer
+    
+    return response_data
 
 @app.get("/tts")
 async def text_to_speech(text: str = Query(...), voice_id: str = Query(VOICE_MALE)):

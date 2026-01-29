@@ -42,6 +42,8 @@ export interface ChatResponse {
   answer: string;
   voice_id?: string;
   user_name?: string;
+  announcement?: string;
+  announcement_voice_id?: string;
 }
 
 export interface SimulateUserResponse {
