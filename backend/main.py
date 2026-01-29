@@ -55,45 +55,45 @@ SCRIPT = {
 
     # Phase 2: SIP Details
     "yes it is": {
-        "text": "Thank you. I see that your SIP of ₹5,000 in the Outstrive Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
+        "text": "Thank you. I see that your SIP of ₹5,000 in the ********* Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
         "voice": VOICE_MALE
     },
     "yes , you can go ahead": {
-        "text": "Thank you. I see that your SIP of ₹5,000 in the Outstrive Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
+        "text": "Thank you. I see that your SIP of ₹5,000 in the ********* Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
         "voice": VOICE_MALE
     },
     "yes": {
-        "text": "Thank you. I see that your SIP of ₹5,000 in the Outstrive Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
+        "text": "Thank you. I see that your SIP of ₹5,000 in the ********* Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
         "voice": VOICE_MALE
     },
 
     # Phase 3: Performance
     "fiveyear performance": {
-        "text": "Sure, Chandrika. The Outstrive Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
+        "text": "Sure, Chandrika. The ********* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
         "voice": VOICE_MALE
     },
     "performance of this fund": {
-        "text": "Sure, Chandrika. The Outstrive Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
+        "text": "Sure, Chandrika. The ********* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
         "voice": VOICE_MALE
     },
 
     # Phase 4: Better Returns
     "better returns": {
-        "text": "Good question. Some Outstrive funds have performed even better. For example, the Outstrive Mid Cap Fund has delivered an average return of about 32% over five years, and the Outstrive Small Cap Fund has given approximately 35% during the same period.",
+        "text": "Good question. Some ******** funds have performed even better. For example, the ******** Mid Cap Fund has delivered an average return of about 32% over five years, and the ******** Small Cap Fund has given approximately 35% during the same period.",
         "voice": VOICE_MALE
     },
     "funds have given better returns": {
-        "text": "Good question. Some Outstrive funds have performed even better. For example, the Outstrive Mid Cap Fund has delivered an average return of about 32% over five years, and the Outstrive Small Cap Fund has given approximately 35% during the same period.",
+        "text": "Good question. Some ******** funds have performed even better. For example, the ******** Mid Cap Fund has delivered an average return of about 32% over five years, and the ******** Small Cap Fund has given approximately 35% during the same period.",
         "voice": VOICE_MALE
     },
 
     # Phase 5: Split Investment
     "split it": {
-        "text": "Yes, Chandrika. Just to confirm, you want to invest ₹2,500 in the Outstrive Small Cap Fund and ₹2,500 in the Outstrive Mid Cap Fund as a monthly SIP, correct?",
+        "text": "Yes, Chandrika. Just to confirm, you want to invest ₹2,500 in the ********* Small Cap Fund and ₹2,500 in the ********* Mid Cap Fund as a monthly SIP, correct?",
         "voice": VOICE_MALE
     },
     "2500 in each": {
-        "text": "Yes, Chandrika. Just to confirm, you want to invest ₹2,500 in the Outstrive Small Cap Fund and ₹2,500 in the Outstrive Mid Cap Fund as a monthly SIP, correct?",
+        "text": "Yes, Chandrika. Just to confirm, you want to invest ₹2,500 in the ********* Small Cap Fund and ₹2,500 in the ********* Mid Cap Fund as a monthly SIP, correct?",
         "voice": VOICE_MALE
     },
 
@@ -109,8 +109,17 @@ SCRIPT = {
 
     # Phase 7: Direct Investor
     "direct investor": {
-        "text": "Perfect. I will go ahead and start the process of re-initiating your SIP. I have placed the request to start a SIP of ₹2,500 in the Outstrive Small Cap Fund and ₹2,500 in the Outstrive Mid Cap Fund. I will also send these details clearly to your WhatsApp or email. Please check them and confirm once you receive them.",
-        "voice": VOICE_MALE
+        "text": "Perfect. I will go ahead and start the process of re-initiating your SIP. I have placed the request to start a SIP of ₹2,500 in the ******** Small Cap Fund and ₹2,500 in the ******** Mid Cap Fund. I will also send these details clearly to your WhatsApp or email. Please check them and confirm once you receive them.",
+        "voice": VOICE_MALE,
+        "show_notification": True,
+        "notification_data": {
+            "title": "SIP Reactivation Details",
+            "items": [
+                {"fund": "******** Small Cap Fund", "amount": "₹2,500", "type": "Monthly SIP"},
+                {"fund": "******** Mid Cap Fund", "amount": "₹2,500", "type": "Monthly SIP"}
+            ],
+            "total": "₹5,000/month"
+        }
     },
 
     # NEW Phase 7A: WhatsApp Confirmation
@@ -151,25 +160,25 @@ SCRIPT = {
 
     # Phase 10: Transfer → Isha
     "okay": {
-        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
+        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from ********** Mutual Fund. How are you today?",
         "voice": VOICE_FEMALE
     },
     "ok": {
-        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
+        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from ********** Mutual Fund. How are you today?",
         "voice": VOICE_FEMALE
     },
     "sure": {
-        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from Outstrive Mutual Fund. How are you today?",
+        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from ********** Mutual Fund. How are you today?",
         "voice": VOICE_FEMALE
     },
 
     # Phase 11: Isha Conversation
     "i am good": {
-        "text": "I’m doing well, thank you. And congratulations on restarting your SIPs with Outstrive Mutual Fund.",
+        "text": "I’m doing well, thank you. And congratulations on restarting your SIPs with ********** Mutual Fund.",
         "voice": VOICE_FEMALE
     },
     "im good": {
-        "text": "I’m doing well, thank you. And congratulations on restarting your SIPs with Outstrive Mutual Fund.",
+        "text": "I’m doing well, thank you. And congratulations on restarting your SIPs with ********** Mutual Fund.",
         "voice": VOICE_FEMALE
     },
 
@@ -179,11 +188,11 @@ SCRIPT = {
     },
 
     "no": {
-        "text": "Perfect. Your SIP requests will be processed shortly. Thank you for choosing Outstrive Mutual Fund, and have a wonderful day.",
+        "text": "Perfect. Your SIP requests will be processed shortly. Thank you for choosing ********** Mutual Fund, and have a wonderful day.",
         "voice": VOICE_FEMALE
     },
     "no thank you": {
-        "text": "Perfect. Your SIP requests will be processed shortly. Thank you for choosing Outstrive Mutual Fund, and have a wonderful day.",
+        "text": "Perfect. Your SIP requests will be processed shortly. Thank you for choosing ********** Mutual Fund, and have a wonderful day.",
         "voice": VOICE_FEMALE
     }
 }
@@ -316,6 +325,11 @@ def chat(user: UserQuery):
     if announcement:
         response_data["announcement"] = announcement
         response_data["announcement_voice_id"] = VOICE_MALE  # Rudraksh announces the transfer
+    
+    # Add notification data if present (for SIP reactivation popup)
+    if response_obj.get("show_notification"):
+        response_data["show_notification"] = True
+        response_data["notification_data"] = response_obj.get("notification_data", {})
     
     return response_data
 

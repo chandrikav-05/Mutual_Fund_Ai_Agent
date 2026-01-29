@@ -283,6 +283,93 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
     setState((prev) => ({ ...prev, isListening: false }));
   }, []);
 
+  // Play a beep sound for privacy masking (when encountering ****** patterns)
+  const playPrivacyBeep = useCallback(async (): Promise<void> => {
+    return new Promise((resolve) => {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+          resolve();
+          return;
+        }
+
+        const ctx = new AudioContextClass();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        // Classic "bleep" sound - 1000Hz tone for privacy masking
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(1000, ctx.currentTime);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        // Beep duration: 300ms with smooth fade in/out
+        const beepDuration = 0.3;
+        gainNode.gain.setValueAtTime(0, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime + beepDuration - 0.02);
+        gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + beepDuration);
+
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + beepDuration);
+
+        setTimeout(() => {
+          ctx.close().catch(() => { });
+          resolve();
+        }, beepDuration * 1000 + 50);
+      } catch (error) {
+        console.error("Error playing privacy beep:", error);
+        resolve();
+      }
+    });
+  }, []);
+
+  // Helper to speak a single text segment
+  const speakSegment = useCallback(
+    async (
+      text: string,
+      gender: "female" | "male" = "female",
+    ): Promise<void> => {
+      if (!synthesisRef.current || !text.trim()) return;
+
+      return new Promise((resolve) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+
+        if (gender === "male" && maleVoiceRef.current) {
+          utterance.voice = maleVoiceRef.current;
+          if (
+            maleVoiceRef.current.name === "Rishi" ||
+            maleVoiceRef.current.name.includes("Google")
+          ) {
+            utterance.pitch = 1.0;
+            utterance.rate = 1.0;
+          } else {
+            utterance.pitch = 0.95;
+            utterance.rate = 1.05;
+          }
+        } else if (selectedVoiceRef.current) {
+          utterance.voice = selectedVoiceRef.current;
+          utterance.pitch = 1.0;
+        }
+
+        utterance.rate = utterance.rate || 1.0;
+        utterance.volume = 1.0;
+
+        utterance.onend = () => {
+          resolve();
+        };
+
+        utterance.onerror = () => {
+          resolve();
+        };
+
+        synthesisRef.current!.speak(utterance);
+      });
+    },
+    [],
+  );
+
   const speak = useCallback(
     async (
       text: string,
@@ -293,6 +380,56 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
       synthesisRef.current.cancel();
       setState((prev) => ({ ...prev, isSpeaking: true }));
 
+      // Check if text contains privacy patterns (multiple asterisks like *******)
+      // This regex matches 3 or more asterisks in a row
+      const privacyPattern = /\*{3,}/g;
+      const hasPrivacyMask = privacyPattern.test(text);
+
+      if (hasPrivacyMask) {
+        // Split text by the privacy pattern and process each segment
+        // We need to identify positions of the asterisks and split accordingly
+        const segments: { type: 'text' | 'beep'; content: string }[] = [];
+        let lastIndex = 0;
+
+        // Reset regex lastIndex for fresh matching
+        const pattern = /\*{3,}/g;
+        let match;
+
+        while ((match = pattern.exec(text)) !== null) {
+          // Add text before the asterisks
+          if (match.index > lastIndex) {
+            const textBefore = text.slice(lastIndex, match.index).trim();
+            if (textBefore) {
+              segments.push({ type: 'text', content: textBefore });
+            }
+          }
+          // Add beep marker
+          segments.push({ type: 'beep', content: match[0] });
+          lastIndex = match.index + match[0].length;
+        }
+
+        // Add remaining text after last asterisks
+        if (lastIndex < text.length) {
+          const remainingText = text.slice(lastIndex).trim();
+          if (remainingText) {
+            segments.push({ type: 'text', content: remainingText });
+          }
+        }
+
+        // Process each segment sequentially
+        for (const segment of segments) {
+          if (segment.type === 'beep') {
+            await playPrivacyBeep();
+          } else {
+            await speakSegment(segment.content, gender);
+          }
+        }
+
+        setState((prev) => ({ ...prev, isSpeaking: false }));
+        return;
+      }
+
+      // Original flow for text without privacy patterns
       return new Promise((resolve) => {
         const utterance = new SpeechSynthesisUtterance(text);
 
@@ -329,7 +466,7 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
         synthesisRef.current!.speak(utterance);
       });
     },
-    [],
+    [playPrivacyBeep, speakSegment],
   );
 
   const stopSpeaking = useCallback(() => {

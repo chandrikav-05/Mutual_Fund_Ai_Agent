@@ -121,7 +121,7 @@ export function ResponseCard({ text, userInput }: ResponseCardProps) {
                 </div>
                 <div className="flex flex-col py-1 gap-0.5 text-left">
                     <h2 className="text-[16px] font-bold text-[#101828] tracking-tight">Mutual Fund AI Agent</h2>
-                    <p className="text-[12px] font-medium text-[#6A7282]">Outstrive Voice AI</p>
+                    <p className="text-[12px] font-medium text-[#6A7282]">********* Voice AI</p>
                 </div>
             </div>
 

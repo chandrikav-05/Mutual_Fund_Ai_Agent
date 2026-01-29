@@ -168,6 +168,7 @@ export function VoiceAssistantPage() {
                 setInputValue('');
                 setOrbStatus('Speaking...');
                 setAppState('speaking');
+
                 const gender = data.voice_id === "zgqefOY5FPQ3bB7OZTVR" ? 'male' : 'female';
                 await voiceEngineRef.current?.speak(data.answer, gender);
 
@@ -207,7 +208,7 @@ export function VoiceAssistantPage() {
             await voiceEngineRef.current?.playRingbackTone();
 
             // Initial greeting message
-            const greeting = "Good morning. I'm Rudraksh calling from Outstrive Mutual Fund regarding your investment. Am i Speaking with Chandrika?";
+            const greeting = "Good morning. I'm Rudraksh calling from ********** Mutual Fund regarding your investment. Am i Speaking with Chandrika?";
             typeWriter(greeting);
             setOrbStatus('Speaking...');
             setAppState('speaking');
@@ -285,7 +286,7 @@ export function VoiceAssistantPage() {
                             {/* Contact Header */}
                             <div className="flex flex-col items-center mt-20 mb-0">
                                 <span className="text-[12px] font-bold text-gray-400 tracking-widest uppercase mb-1">AT&T</span>
-                                <span className="text-lg font-medium tracking-tight text-gray-800">+91 9968579006</span>
+                                <span className="text-lg font-medium tracking-tight text-gray-800">+91 1800 **** ****</span>
                             </div>
 
                             {/* Main Content Area */}
