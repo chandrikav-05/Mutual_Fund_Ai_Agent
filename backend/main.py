@@ -109,7 +109,7 @@ SCRIPT = {
 
     # Phase 7: Direct Investor
     "direct investor": {
-        "text": "Perfect. I will go ahead and start the process of re-initiating your SIP. I have placed the request to start a SIP of ₹2,500 in the ******** Small Cap Fund and ₹2,500 in the ******** Mid Cap Fund. I will also send these details clearly to your WhatsApp or email. Please check them and confirm once you receive them.",
+        "text": "Perfect. I will go ahead and start the process of re-initiating your SIP. I have placed the request to start a SIP of ₹2,500 in the ******** Small Cap Fund and ₹2,500 in the ******** Mid Cap Fund. I will also send these details clearly to your WhatsApp. Please check them and confirm once you receive them.",
         "voice": VOICE_MALE,
         "show_notification": True,
         "notification_data": {

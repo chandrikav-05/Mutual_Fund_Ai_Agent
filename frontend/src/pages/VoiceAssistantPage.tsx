@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { VoiceOrb, ResponseCard } from '@/components/voice-assistant';
+import { VoiceOrb, ResponseCard, WhatsAppNotification } from '@/components/voice-assistant';
 import { useVoiceEngine } from '@/hooks/useVoiceEngine';
 import { sendChatMessage } from '@/services/api';
 import { Card } from '@/components/ui/card';
@@ -18,6 +18,7 @@ export function VoiceAssistantPage() {
     const [inputValue, setInputValue] = useState('');
     const [isMuted, setIsMuted] = useState(false);
     const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+    const [showWhatsApp, setShowWhatsApp] = useState(false);
 
     const isCallActiveRef = useRef(false);
     const isProcessingRef = useRef(false);
@@ -164,6 +165,9 @@ export function VoiceAssistantPage() {
 
             // Step 3: Show and speak the main message (Isha's greeting after announcement, or regular response)
             if (data.answer && isCallActiveRef.current) {
+                if (data.answer.toLowerCase().includes('whatsapp')) {
+                    setShowWhatsApp(true);
+                }
                 typeWriter(data.answer);
                 setInputValue('');
                 setOrbStatus('Speaking...');
@@ -270,93 +274,119 @@ export function VoiceAssistantPage() {
                 {/* Right: iPhone UI */}
                 <div className="flex justify-center items-center max-w-[40%] w-full">
                     <Iphone17Pro width={380} height={550}>
-                        <div className="relative flex flex-col h-full bg-white font-sans text-gray-900 overflow-hidden">
+                        <div className={cn("relative flex flex-col h-full font-sans overflow-hidden transition-colors duration-300",
+                            showWhatsApp ? "bg-[#0b141a] text-white" : "bg-white text-gray-900"
+                        )}>
                             {/* StatusBar */}
-                            <div className="flex justify-between items-center px-8 pt-6 pb-2">
+                            <div className="flex justify-between items-center px-8 pt-6 pb-2 shrink-0 z-10">
                                 <span className="text-sm font-semibold">9:41</span>
                                 <div className="flex gap-1.5 items-center">
                                     <Signal size={14} strokeWidth={2.5} />
                                     <Wifi size={14} strokeWidth={2.5} />
-                                    <div className="w-5 h-2.5 border border-gray-400 rounded-sm relative ml-0.5">
-                                        <div className="absolute inset-px bg-gray-900 rounded-[px]" style={{ width: '60%' }} />
+                                    <div className={cn("w-5 h-2.5 border rounded-sm relative ml-0.5", showWhatsApp ? "border-gray-500" : "border-gray-400")}>
+                                        <div className={cn("absolute inset-px rounded-[1px]", showWhatsApp ? "bg-white" : "bg-gray-900")} style={{ width: '60%' }} />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Contact Header */}
-                            <div className="flex flex-col items-center mt-20 mb-0">
-                                <span className="text-[12px] font-bold text-gray-400 tracking-widest uppercase mb-1">AT&T</span>
-                                <span className="text-lg font-medium tracking-tight text-gray-800">+91 1800 **** ****</span>
-                            </div>
+                            <AnimatePresence mode="wait">
+                                {showWhatsApp ? (
+                                    <motion.div
+                                        key="whatsapp"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 20 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="flex-1 flex flex-col relative overflow-hidden"
+                                    >
+                                        <WhatsAppNotification onConfirm={() => setShowWhatsApp(false)} />
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="call-ui"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="flex-1 flex flex-col"
+                                    >
+                                        {/* Contact Header */}
+                                        <div className="flex flex-col items-center mt-20 mb-0">
+                                            <span className="text-[12px] font-bold text-gray-400 tracking-widest uppercase mb-1">AT&T</span>
+                                            <span className="text-lg font-medium tracking-tight text-gray-800">+91 1800 **** ****</span>
+                                        </div>
 
-                            {/* Main Content Area */}
-                            <div className="flex-1 flex flex-col items-center justify-center">
-                                <VoiceOrb
-                                    isActive={isActive}
-                                    isSpeaking={isSpeaking}
-                                    onClick={() => !isActive && toggleCall()}
-                                />
+                                        {/* Main Content Area */}
+                                        <div className="flex-1 flex flex-col items-center justify-center">
+                                            <VoiceOrb
+                                                isActive={isActive}
+                                                isSpeaking={isSpeaking}
+                                                onClick={() => !isActive && toggleCall()}
+                                            />
 
-                                <div className="mt-12 flex flex-col items-center gap-1">
-                                    <h3 className="text-3xl font-bold tracking-tight text-[#111827]">
-                                        Mutual Fund
-                                    </h3>
-                                    <p className="text-lg font-medium text-gray-400">
-                                        AI Voice Agent
-                                    </p>
+                                            <div className="mt-12 flex flex-col items-center gap-1">
+                                                <h3 className="text-3xl font-bold tracking-tight text-[#111827]">
+                                                    Mutual Fund
+                                                </h3>
+                                                <p className="text-lg font-medium text-gray-400">
+                                                    AI Voice Agent
+                                                </p>
 
-                                    <AnimatePresence>
-                                        {isActive && (
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.9 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.9 }}
-                                                className="flex items-center gap-2 mt-2 text-[#22C55E] font-medium text-lg"
+                                                <AnimatePresence>
+                                                    {isActive && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, scale: 0.9 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                            exit={{ opacity: 0, scale: 0.9 }}
+                                                            className="flex items-center gap-2 mt-2 text-[#22C55E] font-medium text-lg"
+                                                        >
+                                                            <div className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
+                                                            {isSpeaking ? 'Speaking...' : isListening ? 'Listening...' : orbStatus}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom Controls */}
+                                        <div className="pb-12 px-10 flex items-center justify-between">
+                                            <button
+                                                onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                                                className={cn(
+                                                    "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
+                                                    isSpeakerOn ? "bg-gray-100 text-gray-900" : "bg-gray-50 text-gray-400"
+                                                )}
                                             >
-                                                <div className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
-                                                {isSpeaking ? 'Speaking...' : isListening ? 'Listening...' : orbStatus}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            </div>
+                                                <Volume2 size={22} />
+                                            </button>
 
-                            {/* Bottom Controls */}
-                            <div className="pb-12 px-10 flex items-center justify-between">
-                                <button
-                                    onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-                                    className={cn(
-                                        "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
-                                        isSpeakerOn ? "bg-gray-100 text-gray-900" : "bg-gray-50 text-gray-400"
-                                    )}
-                                >
-                                    <Volume2 size={22} />
-                                </button>
+                                            <button
+                                                onClick={toggleCall}
+                                                className={cn(
+                                                    "w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 transform hover:scale-105 active:scale-95",
+                                                    isActive ? "bg-[#FF3B30] rotate-135" : "bg-[#34C759]"
+                                                )}
+                                            >
+                                                <Phone size={32} fill="white" className="text-white" />
+                                            </button>
 
-                                <button
-                                    onClick={toggleCall}
-                                    className={cn(
-                                        "w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 transform hover:scale-105 active:scale-95",
-                                        isActive ? "bg-[#FF3B30] rotate-135" : "bg-[#34C759]"
-                                    )}
-                                >
-                                    <Phone size={32} fill="white" className="text-white" />
-                                </button>
-
-                                <button
-                                    onClick={toggleMute}
-                                    className={cn(
-                                        "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
-                                        isMuted ? "bg-red-50 text-red-500" : "bg-gray-100 text-gray-900"
-                                    )}
-                                >
-                                    <Mic size={22} fill={isMuted ? "currentColor" : "none"} />
-                                </button>
-                            </div>
+                                            <button
+                                                onClick={toggleMute}
+                                                className={cn(
+                                                    "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
+                                                    isMuted ? "bg-red-50 text-red-500" : "bg-gray-100 text-gray-900"
+                                                )}
+                                            >
+                                                <Mic size={22} fill={isMuted ? "currentColor" : "none"} />
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {/* Home Indicator */}
-                            <div className="flex justify-center pb-2">
-                                <div className="w-32 h-1 bg-gray-200 rounded-full" />
+                            <div className="flex justify-center pb-2 shrink-0 z-10">
+                                <div className={cn("w-32 h-1 rounded-full", showWhatsApp ? "bg-gray-600" : "bg-gray-200")} />
                             </div>
                         </div>
                     </Iphone17Pro>
