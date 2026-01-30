@@ -165,9 +165,6 @@ export function VoiceAssistantPage() {
 
             // Step 3: Show and speak the main message (Isha's greeting after announcement, or regular response)
             if (data.answer && isCallActiveRef.current) {
-                if (data.answer.toLowerCase().includes('whatsapp')) {
-                    setShowWhatsApp(true);
-                }
                 typeWriter(data.answer);
                 setInputValue('');
                 setOrbStatus('Speaking...');
@@ -178,6 +175,10 @@ export function VoiceAssistantPage() {
 
                 // If call was ended while speaking, don't continue
                 if (!isCallActiveRef.current) return;
+
+                if (data.answer.toLowerCase().includes('whatsapp')) {
+                    setShowWhatsApp(true);
+                }
 
                 setAppState('active');
                 isProcessingRef.current = false;

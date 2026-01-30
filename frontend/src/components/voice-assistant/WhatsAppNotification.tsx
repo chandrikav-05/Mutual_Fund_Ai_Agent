@@ -74,7 +74,7 @@ export function WhatsAppNotification({ onConfirm }: WhatsAppNotificationProps) {
                         <div className="absolute top-0 -left-[8px] width-0 height-0 border-t-[10px] border-t-[#202c33] border-l-[10px] border-l-transparent" />
 
                         <div className="text-[14.5px] leading-relaxed text-[#E9EDEF] whitespace-pre-wrap text-left">
-                            <p className="font-bold text-[#E9EDEF] mb-2">Hello Sanket,</p>
+                            <p className="font-bold text-[#E9EDEF] mb-2">Hello Chandrika,</p>
                             <p className="mb-3">Thank you for trusting Fund with your investments.</p>
                             <p className="mb-3">Please find your payment link below to initiate the SIP in and</p>
                             <p className="mb-3">Please complete your payment and do not forget to register your biller in netbanking</p>
@@ -94,7 +94,7 @@ export function WhatsAppNotification({ onConfirm }: WhatsAppNotificationProps) {
                         className="w-full bg-[#00a884] hover:bg-[#008f6f] active:bg-[#007f63] text-black font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm text-sm"
                     >
                         <span className="text-white">↗</span>
-                        <span className="text-white">Complete Payment</span>
+                        <span className="text-white">Read and Confirm</span>
                     </button>
                 </div>
             </div>
