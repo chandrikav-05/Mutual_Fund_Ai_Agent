@@ -63,6 +63,24 @@ export const sendChatMessage = async (
 };
 
 /**
+ * Get direct TTS audio URL for streaming
+ */
+export const getTTSAudioURL = (text: string, voiceId?: string): string => {
+  return `${API_BASE_URL}/tts?text=${encodeURIComponent(text)}&voice_id=${voiceId || "ritu"}`;
+};
+
+/**
+ * Fetch TTS audio from the backend as a blob (legacy/fallback)
+ */
+export const getTTSAudio = async (text: string, voiceId?: string): Promise<string> => {
+  const response = await apiClient.get("/tts", {
+    params: { text, voice_id: voiceId },
+    responseType: "blob",
+  });
+  return URL.createObjectURL(response.data);
+};
+
+/**
  * Simulate user turn for demo purposes
  */
 export const simulateUserTurn = async (

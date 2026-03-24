@@ -3,6 +3,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { getTTSAudioURL } from "@/services/api";
 
 interface VoiceEngineState {
   isListening: boolean;
@@ -98,12 +99,10 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
   });
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-  const synthesisRef = useRef<SpeechSynthesis | null>(null);
-  const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
-  const maleVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalTranscriptRef = useRef<string>("");
   const audioContextRef = useRef<AudioContext | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const callbacksRef = useRef(callbacks);
 
   // Keep callbacks ref updated
@@ -111,70 +110,9 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
     callbacksRef.current = callbacks;
   }, [callbacks]);
 
-  // Initialize voices
-  const initVoices = useCallback(() => {
-    const loadVoices = () => {
-      if (!synthesisRef.current) return;
-
-      const voices = synthesisRef.current.getVoices();
-
-      // Find best quality voices
-      const availableVoices = voices.filter((v: SpeechSynthesisVoice) =>
-        v.lang.startsWith("en"),
-      );
-
-      // Female voice for agent
-      selectedVoiceRef.current =
-        voices.find(
-          (v: SpeechSynthesisVoice) =>
-            v.name.includes("Google") && v.lang.includes("en"),
-        ) ||
-        voices.find((v: SpeechSynthesisVoice) => v.name.includes("Samantha")) ||
-        voices.find(
-          (v: SpeechSynthesisVoice) =>
-            v.name.includes("Microsoft") && v.name.includes("Zira"),
-        ) ||
-        voices.find((v: SpeechSynthesisVoice) => v.lang === "en-IN") ||
-        voices.find((v: SpeechSynthesisVoice) => v.lang.startsWith("en")) ||
-        voices[0];
-
-      // Male voice for user
-      const maleVoiceCandidates = [
-        "Google US English Male",
-        "Google UK English Male",
-        "Microsoft David",
-        "Daniel",
-        "Alex",
-        "Fred",
-        "Evan",
-        "Nathan",
-        "Rishi"
-      ];
-
-      maleVoiceRef.current =
-        voices.find(v => maleVoiceCandidates.includes(v.name)) ||
-        voices.find(v => v.name.includes("Male")) ||
-        // Fallback to any voice that is NOT the selected female agent voice
-        voices.find(v => v.name !== selectedVoiceRef.current?.name && v.lang.startsWith("en")) ||
-        voices[0];
-
-      console.log("Agent Voice:", selectedVoiceRef.current?.name);
-      console.log("User Voice:", maleVoiceRef.current?.name);
-    };
-
-    if (synthesisRef.current?.getVoices().length) {
-      loadVoices();
-    } else if (synthesisRef.current) {
-      synthesisRef.current.onvoiceschanged = loadVoices;
-      setTimeout(loadVoices, 500);
-    }
-  }, []);
-
-  // Initialize recognition and synthesis
+  // Initialize recognition
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    synthesisRef.current = window.speechSynthesis;
 
     const SpeechRecognitionClass =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -219,7 +157,7 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
             callbacksRef.current.onResult?.(cleaned, true);
             finalTranscriptRef.current = "";
           }
-        }, 1000);
+        }, 500);
       }
     };
 
@@ -242,9 +180,6 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
 
     recognitionRef.current = recognition;
 
-    // Initialize voices
-    initVoices();
-
     return () => {
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
@@ -255,7 +190,7 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
         // Ignore stop errors
       }
     };
-  }, [initVoices]);
+  }, []);
 
   const startListening = useCallback(() => {
     if (recognitionRef.current) {
@@ -283,195 +218,56 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
     setState((prev) => ({ ...prev, isListening: false }));
   }, []);
 
-  // Play a beep sound for privacy masking (when encountering ****** patterns)
-  const playPrivacyBeep = useCallback(async (): Promise<void> => {
-    return new Promise((resolve) => {
-      try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) {
-          resolve();
-          return;
-        }
-
-        const ctx = new AudioContextClass();
-        const oscillator = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-
-        // Classic "bleep" sound - 1000Hz tone for privacy masking
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(1000, ctx.currentTime);
-
-        oscillator.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        // Beep duration: 300ms with smooth fade in/out
-        const beepDuration = 0.3;
-        gainNode.gain.setValueAtTime(0, ctx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.02);
-        gainNode.gain.setValueAtTime(0.3, ctx.currentTime + beepDuration - 0.02);
-        gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + beepDuration);
-
-        oscillator.start(ctx.currentTime);
-        oscillator.stop(ctx.currentTime + beepDuration);
-
-        setTimeout(() => {
-          ctx.close().catch(() => { });
-          resolve();
-        }, beepDuration * 1000 + 50);
-      } catch (error) {
-        console.error("Error playing privacy beep:", error);
-        resolve();
-      }
-    });
-  }, []);
-
-  // Helper to speak a single text segment
-  const speakSegment = useCallback(
+  const speak = useCallback(
     async (
       text: string,
-      gender: "female" | "male" = "female",
+      voiceId: string = "ritu",
     ): Promise<void> => {
-      if (!synthesisRef.current || !text.trim()) return;
+      // Cancel previous speech if any
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current = null;
+      }
 
-      return new Promise((resolve) => {
-        const utterance = new SpeechSynthesisUtterance(text);
+      setState((prev) => ({ ...prev, isSpeaking: true }));
 
-        if (gender === "male" && maleVoiceRef.current) {
-          utterance.voice = maleVoiceRef.current;
-          if (
-            maleVoiceRef.current.name === "Rishi" ||
-            maleVoiceRef.current.name.includes("Google")
-          ) {
-            utterance.pitch = 1.0;
-            utterance.rate = 1.0;
-          } else {
-            utterance.pitch = 0.95;
-            utterance.rate = 1.05;
-          }
-        } else if (selectedVoiceRef.current) {
-          utterance.voice = selectedVoiceRef.current;
-          utterance.pitch = 1.0;
-        }
+      try {
+        const audioUrl = getTTSAudioURL(text, voiceId);
+        const audio = new Audio(audioUrl);
+        audioPlayerRef.current = audio;
 
-        utterance.rate = utterance.rate || 1.0;
-        utterance.volume = 1.0;
+        return new Promise((resolve) => {
+          audio.onended = () => {
+            setState((prev) => ({ ...prev, isSpeaking: false }));
+            audioPlayerRef.current = null;
+            resolve();
+          };
 
-        utterance.onend = () => {
-          resolve();
-        };
+          audio.onerror = (e) => {
+            console.error("Audio playback error:", e);
+            setState((prev) => ({ ...prev, isSpeaking: false }));
+            audioPlayerRef.current = null;
+            resolve();
+          };
 
-        utterance.onerror = () => {
-          resolve();
-        };
-
-        synthesisRef.current!.speak(utterance);
-      });
+          audio.play().catch(err => {
+            console.error("Audio play error:", err);
+            setState((prev) => ({ ...prev, isSpeaking: false }));
+            resolve();
+          });
+        });
+      } catch (error) {
+        console.error("TTS fetch error:", error);
+        setState((prev) => ({ ...prev, isSpeaking: false }));
+      }
     },
     [],
   );
 
-  const speak = useCallback(
-    async (
-      text: string,
-      gender: "female" | "male" = "female",
-    ): Promise<void> => {
-      if (!synthesisRef.current) return;
-
-      synthesisRef.current.cancel();
-      setState((prev) => ({ ...prev, isSpeaking: true }));
-
-      // Check if text contains privacy patterns (multiple asterisks like *******)
-      // This regex matches 3 or more asterisks in a row
-      const privacyPattern = /\*{3,}/g;
-      const hasPrivacyMask = privacyPattern.test(text);
-
-      if (hasPrivacyMask) {
-        // Split text by the privacy pattern and process each segment
-        // We need to identify positions of the asterisks and split accordingly
-        const segments: { type: 'text' | 'beep'; content: string }[] = [];
-        let lastIndex = 0;
-
-        // Reset regex lastIndex for fresh matching
-        const pattern = /\*{3,}/g;
-        let match;
-
-        while ((match = pattern.exec(text)) !== null) {
-          // Add text before the asterisks
-          if (match.index > lastIndex) {
-            const textBefore = text.slice(lastIndex, match.index).trim();
-            if (textBefore) {
-              segments.push({ type: 'text', content: textBefore });
-            }
-          }
-          // Add beep marker
-          segments.push({ type: 'beep', content: match[0] });
-          lastIndex = match.index + match[0].length;
-        }
-
-        // Add remaining text after last asterisks
-        if (lastIndex < text.length) {
-          const remainingText = text.slice(lastIndex).trim();
-          if (remainingText) {
-            segments.push({ type: 'text', content: remainingText });
-          }
-        }
-
-        // Process each segment sequentially
-        for (const segment of segments) {
-          if (segment.type === 'beep') {
-            await playPrivacyBeep();
-          } else {
-            await speakSegment(segment.content, gender);
-          }
-        }
-
-        setState((prev) => ({ ...prev, isSpeaking: false }));
-        return;
-      }
-
-      // Original flow for text without privacy patterns
-      return new Promise((resolve) => {
-        const utterance = new SpeechSynthesisUtterance(text);
-
-        if (gender === "male" && maleVoiceRef.current) {
-          utterance.voice = maleVoiceRef.current;
-          if (
-            maleVoiceRef.current.name === "Rishi" ||
-            maleVoiceRef.current.name.includes("Google")
-          ) {
-            utterance.pitch = 1.0;
-            utterance.rate = 1.0;
-          } else {
-            utterance.pitch = 0.95;
-            utterance.rate = 1.05;
-          }
-        } else if (selectedVoiceRef.current) {
-          utterance.voice = selectedVoiceRef.current;
-          utterance.pitch = 1.0;
-        }
-
-        utterance.rate = utterance.rate || 1.0;
-        utterance.volume = 1.0;
-
-        utterance.onend = () => {
-          setState((prev) => ({ ...prev, isSpeaking: false }));
-          resolve();
-        };
-
-        utterance.onerror = () => {
-          setState((prev) => ({ ...prev, isSpeaking: false }));
-          resolve();
-        };
-
-        synthesisRef.current!.speak(utterance);
-      });
-    },
-    [playPrivacyBeep, speakSegment],
-  );
-
   const stopSpeaking = useCallback(() => {
-    if (synthesisRef.current) {
-      synthesisRef.current.cancel();
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current = null;
     }
     if (audioContextRef.current) {
       audioContextRef.current.close().catch(() => { });

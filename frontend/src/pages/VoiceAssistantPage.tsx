@@ -147,8 +147,8 @@ export function VoiceAssistantPage() {
                 setOrbStatus('Transferring...');
                 setAppState('speaking');
 
-                // Speak the announcement with male voice (Rudraksh)
-                await voiceEngineRef.current?.speak(data.announcement, 'male');
+                // Speak the announcement with male voice (Rudraksh) - now Shubh
+                await voiceEngineRef.current?.speak(data.announcement, data.announcement_voice_id || 'ritu');
 
                 if (!isCallActiveRef.current) return;
 
@@ -170,8 +170,7 @@ export function VoiceAssistantPage() {
                 setOrbStatus('Speaking...');
                 setAppState('speaking');
 
-                const gender = data.voice_id === "zgqefOY5FPQ3bB7OZTVR" ? 'male' : 'female';
-                await voiceEngineRef.current?.speak(data.answer, gender);
+                await voiceEngineRef.current?.speak(data.answer, data.voice_id || 'ritu');
 
                 // If call was ended while speaking, don't continue
                 if (!isCallActiveRef.current) return;
@@ -213,11 +212,11 @@ export function VoiceAssistantPage() {
             await voiceEngineRef.current?.playRingbackTone();
 
             // Initial greeting message
-            const greeting = "Good morning. I'm Rudraksh calling from ********** Mutual Fund regarding your investment. Am i Speaking with Chandrika?";
+            const greeting = "Good morning. I'm Ritu calling from ********** Mutual Fund regarding your investment. Am i Speaking with Sai?";
             typeWriter(greeting);
             setOrbStatus('Speaking...');
             setAppState('speaking');
-            await voiceEngineRef.current?.speak(greeting, 'male');
+            await voiceEngineRef.current?.speak(greeting, 'ritu');
 
             // If call was ended while speaking, don't continue
             if (!isCallActiveRef.current) return;
@@ -236,7 +235,7 @@ export function VoiceAssistantPage() {
             if (!isCallActiveRef.current) return;
 
             typeWriter(fallback);
-            await voiceEngineRef.current?.speak(fallback, 'female');
+            await voiceEngineRef.current?.speak(fallback, 'ritu');
 
             if (!isCallActiveRef.current) return;
 
