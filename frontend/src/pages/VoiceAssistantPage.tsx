@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { VoiceOrb, ResponseCard, WhatsAppNotification } from '@/components/voice-assistant';
 import { useVoiceEngine } from '@/hooks/useVoiceEngine';
-import { sendChatMessage } from '@/services/api';
+import { sendChatMessage, resetConversation } from '@/services/api';
 import { Card } from '@/components/ui/card';
 import { Iphone17Pro } from '@/components/ui/iphone-17-pro';
 import { Wifi, Signal, Mic, Phone, Volume2 } from 'lucide-react';
@@ -60,8 +60,13 @@ export function VoiceAssistantPage() {
     }, []);
 
     const onVoiceError = useCallback((error: string) => {
-        if (error === 'no-speech' && isCallActiveRef.current && !isProcessingRef.current) {
-            voiceEngineRef.current?.startListening();
+        console.warn('Speech error:', error);
+        if ((error === 'no-speech' || error === 'aborted' || error === 'network') && isCallActiveRef.current && !isProcessingRef.current) {
+            setTimeout(() => {
+                if (isCallActiveRef.current && !isProcessingRef.current) {
+                    voiceEngineRef.current?.startListening();
+                }
+            }, 300);
         }
     }, []);
 
@@ -98,7 +103,7 @@ export function VoiceAssistantPage() {
                 if (typewriterRef.current) clearInterval(typewriterRef.current);
                 callback?.();
             }
-        }, 50);
+        }, 20);
     };
 
     const endCall = useCallback((statusMsg?: string) => {
@@ -148,7 +153,7 @@ export function VoiceAssistantPage() {
                 setAppState('speaking');
 
                 // Speak the announcement with male voice (Rudraksh) - now Shubh
-                await voiceEngineRef.current?.speak(data.announcement, data.announcement_voice_id || 'ritu');
+                await voiceEngineRef.current?.speak(data.announcement, data.announcement_voice_id || 'shubh');
 
                 if (!isCallActiveRef.current) return;
 
@@ -170,7 +175,7 @@ export function VoiceAssistantPage() {
                 setOrbStatus('Speaking...');
                 setAppState('speaking');
 
-                await voiceEngineRef.current?.speak(data.answer, data.voice_id || 'ritu');
+                await voiceEngineRef.current?.speak(data.answer, data.voice_id || 'shubh');
 
                 // If call was ended while speaking, don't continue
                 if (!isCallActiveRef.current) return;
@@ -180,7 +185,6 @@ export function VoiceAssistantPage() {
                 }
 
                 setAppState('active');
-                isProcessingRef.current = false;
                 if (isCallActiveRef.current) {
                     setOrbStatus('Listening...');
                     voiceEngineRef.current?.startListening();
@@ -189,11 +193,13 @@ export function VoiceAssistantPage() {
         } catch (error) {
             console.error('Chat error:', error);
             setResponseText("I'm sorry, I'm having trouble. Please try again.");
-            isProcessingRef.current = false;
             if (isCallActiveRef.current) {
                 setOrbStatus('Listening...');
                 voiceEngineRef.current?.startListening();
             }
+        } finally {
+            // Always reset processing state so subsequent messages can be taken
+            isProcessingRef.current = false;
         }
     }, []);
 
@@ -208,15 +214,18 @@ export function VoiceAssistantPage() {
         setOrbStatus('Connecting...');
         setInputValue('');
         try {
+            // Reset backend state for a fresh conversation
+            await resetConversation();
+
             // Play ringback tone while preparing
             await voiceEngineRef.current?.playRingbackTone();
 
             // Initial greeting message
-            const greeting = "Good morning. I'm Ritu calling from ********** Mutual Fund regarding your investment. Am i Speaking with Sai?";
+            const greeting = "Good morning. I'm Shubh calling from ********** Mutual Fund regarding your investment. Am i Speaking with Chandrika?";
             typeWriter(greeting);
             setOrbStatus('Speaking...');
             setAppState('speaking');
-            await voiceEngineRef.current?.speak(greeting, 'ritu');
+            await voiceEngineRef.current?.speak(greeting, 'shubh');
 
             // If call was ended while speaking, don't continue
             if (!isCallActiveRef.current) return;
@@ -235,7 +244,7 @@ export function VoiceAssistantPage() {
             if (!isCallActiveRef.current) return;
 
             typeWriter(fallback);
-            await voiceEngineRef.current?.speak(fallback, 'ritu');
+            await voiceEngineRef.current?.speak(fallback, 'shubh');
 
             if (!isCallActiveRef.current) return;
 

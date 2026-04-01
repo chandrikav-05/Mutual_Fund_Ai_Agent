@@ -13,8 +13,8 @@ import string
 load_dotenv()
 
 SARVAM_AI_API_KEY = os.getenv("SARVAM_AI_API_KEY")
-VOICE_MALE = "ritu"
-VOICE_FEMALE = "ritu" # Set to ritu as per user request
+VOICE_MALE = "shubh"
+VOICE_FEMALE = "shubh" # Set to shubh as per user request
 
 # Global state to track conversation phase
 # Detailed Phases for sequential flow
@@ -38,7 +38,7 @@ class UserQuery(BaseModel):
 SCRIPT = {
     # Phase 1: Identity & Greeting
     "is this a good time": {
-        "text": "Hi Sai. Is this a good time to talk about your stopped SIP?",
+        "text": "Hi Chandrika. Is this a good time to talk about your stopped SIP?",
         "voice": VOICE_MALE,
         "next_state": "GREETING"
     },
@@ -52,12 +52,12 @@ SCRIPT = {
 
     # Phase 3: Performance
     "fiveyear performance": {
-        "text": "Sure, Sai. The ********* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
+        "text": "Sure, Chandrika. The ********* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
         "voice": VOICE_MALE,
         "next_state": "PERFORMANCE"
     },
     "performance of this fund": {
-        "text": "Sure, Sai. The ********* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
+        "text": "Sure, Chandrika. The ********* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
         "voice": VOICE_MALE,
         "next_state": "PERFORMANCE"
     },
@@ -71,7 +71,7 @@ SCRIPT = {
 
     # Phase 5: Split Investment
     "split it": {
-        "text": "Yes, Sai. Just to confirm, you want to invest ₹2,500 in the ********* Small Cap Fund and ₹2,500 in the ********* Mid Cap Fund as a monthly SIP, correct?",
+        "text": "Yes, Chandrika. Just to confirm, you want to invest ₹2,500 in the ********* Small Cap Fund and ₹2,500 in the ********* Mid Cap Fund as a monthly SIP, correct?",
         "voice": VOICE_MALE,
         "next_state": "SPLIT_CONFIRMATION"
     },
@@ -101,7 +101,7 @@ SCRIPT = {
 
     # Phase 7A: WhatsApp Confirmation
     "whatsapp confirmation": {
-        "text": "Thank you, Sai. Just a quick reminder — mutual fund investments are subject to market risks. Please read all scheme-related documents carefully. Will you do that?",
+        "text": "Thank you, Chandrika. Just a quick reminder — mutual fund investments are subject to market risks. Please read all scheme-related documents carefully. Will you do that?",
         "voice": VOICE_MALE,
         "next_state": "WHATSAPP_CONFIRMED"
     },
@@ -122,7 +122,7 @@ SCRIPT = {
 
     # Phase 9: Handoff
     "handoff announcement": {
-        "text": "Alright, Sai. I will now connect this call to one of our AI wealth advisors who will register your details and complete the SIP activation.",
+        "text": "Alright, Chandrika. I will now connect this call to one of our AI wealth advisors who will register your details and complete the SIP activation.",
         "voice": VOICE_MALE,
         "next_state": "HANDOFF"
     },
@@ -157,6 +157,12 @@ def normalize(text):
 
 NORMALIZED_SCRIPT = {normalize(k): v for k, v in SCRIPT.items()}
 SORTED_KEYS = sorted(NORMALIZED_SCRIPT.keys(), key=len, reverse=True)
+
+@app.post("/reset")
+def reset_state():
+    global CONVERSATION_STATE
+    CONVERSATION_STATE = "START"
+    return {"message": "State reset successfully"}
 
 @app.post("/chat")
 def chat(user: UserQuery):
@@ -198,7 +204,7 @@ def chat(user: UserQuery):
                 extracted_name = candidate.title()
 
     # Determine current_name: Extracted > Existing > Default
-    current_name = extracted_name if extracted_name else (user.user_name if user.user_name else "Sai")
+    current_name = extracted_name if extracted_name else (user.user_name if user.user_name else "Chandrika")
     
     # Map generic inputs to contextual keys based on state
     lookup_key = processed_input
@@ -322,10 +328,17 @@ def chat(user: UserQuery):
     return response_data
 
 
-from functools import lru_cache
+import httpx
+import base64
 
-@lru_cache(maxsize=128)
-def get_sarvam_tts(text: str, voice_id: str):
+# Memory cache for TTS to reduce lag
+TTS_CACHE = {}
+
+async def get_sarvam_tts(text: str, voice_id: str):
+    cache_key = (text, voice_id)
+    if cache_key in TTS_CACHE:
+        return TTS_CACHE[cache_key]
+    
     url = "https://api.sarvam.ai/text-to-speech"
     payload = {
         "inputs": [text],
@@ -341,12 +354,20 @@ def get_sarvam_tts(text: str, voice_id: str):
         "Content-Type": "application/json"
     }
     
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code == 200:
-        audio_content = response.json().get("audios", [])[0]
-        if audio_content:
-            import base64
-            return base64.b64decode(audio_content)
+    async with httpx.AsyncClient() as client:
+        try:
+            print(f"[TTS] Requesting speech for: {text[:50]}...")
+            response = await client.post(url, json=payload, headers=headers, timeout=30.0)
+            if response.status_code == 200:
+                audio_content = response.json().get("audios", [])[0]
+                if audio_content:
+                    audio_data = base64.b64decode(audio_content)
+                    TTS_CACHE[cache_key] = audio_data
+                    return audio_data
+            else:
+                print(f"[TTS] Error: {response.status_code} - {response.text}")
+        except Exception as e:
+            print(f"[TTS] Exception: {e}")
     return None
 
 @app.get("/tts")
@@ -359,7 +380,7 @@ async def text_to_speech(text: str = Query(...), voice_id: str = Query(VOICE_MAL
 
     try:
         # Using a cached version of the TTS generation
-        audio_data = get_sarvam_tts(text, voice_id)
+        audio_data = await get_sarvam_tts(text, voice_id)
         
         if audio_data:
             return Response(content=audio_data, media_type="audio/wav")
@@ -372,7 +393,9 @@ async def text_to_speech(text: str = Query(...), voice_id: str = Query(VOICE_MAL
 
 import threading
 
-def pre_populate_cache():
+import asyncio
+
+async def pre_populate_cache_async():
     try:
         print("Pre-populating TTS cache...")
         # A simple set to track what we've already cached to avoid duplicates
@@ -382,22 +405,29 @@ def pre_populate_cache():
             voice = text_obj.get("voice", VOICE_MALE)
             
             # Split by ||| to catch both announcement and main message
-            parts = [p.strip() for p in text.replace("{name}", "Sai").split("|||") if p.strip()]
+            parts = [p.strip() for p in text.replace("{name}", "Chandrika").split("|||") if p.strip()]
             
             for i, part in enumerate(parts):
                 # Announcement uses VOICE_MALE if it's the first part of a split
                 current_voice = VOICE_MALE if len(parts) > 1 and i == 0 else voice
                 cache_key = (part, current_voice)
                 if part and cache_key not in seen:
-                    get_sarvam_tts(part, current_voice)
+                    await get_sarvam_tts(part, current_voice)
                     seen.add(cache_key)
         
         # Also pre-populate one-off responses or common fallbacks
-        get_sarvam_tts("Hi Sai. Is this a good time to talk about your stopped SIP?", VOICE_MALE)
+        await get_sarvam_tts("Hi Chandrika. Is this a good time to talk about your stopped SIP?", VOICE_MALE)
         
         print("TTS cache pre-population complete.")
     except Exception as e:
         print(f"Cache pre-population error: {e}")
 
+def run_cache_pre_population():
+    # Use a fresh event loop for the pre-population thread
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(pre_populate_cache_async())
+    loop.close()
+
 # Run in a separate thread to avoid delaying server startup
-threading.Thread(target=pre_populate_cache, daemon=True).start()
+threading.Thread(target=run_cache_pre_population, daemon=True).start()

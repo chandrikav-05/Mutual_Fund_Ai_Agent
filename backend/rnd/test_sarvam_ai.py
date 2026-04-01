@@ -50,4 +50,4 @@ def test_tts(text, voice_id="shubh"):
         print(f"Exception: {e}")
 
 if __name__ == "__main__":
-    test_tts("Hi Sai. This is a test of the Sarvam AI Ritu voice.", voice_id="ritu")
+    test_tts("Hi Chandrika. This is a test of the Sarvam AI Shubh voice.", voice_id="shubh")

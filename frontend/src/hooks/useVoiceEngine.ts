@@ -157,7 +157,7 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
             callbacksRef.current.onResult?.(cleaned, true);
             finalTranscriptRef.current = "";
           }
-        }, 500);
+        }, 400); // Reduced from 500ms to 400ms for faster response
       }
     };
 
@@ -195,12 +195,14 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
   const startListening = useCallback(() => {
     if (recognitionRef.current) {
       try {
-        // We try to start; if it's already started, it will throw an error we can ignore
+        // Stop any existing recognition first to clean state
+        try { recognitionRef.current.stop(); } catch (e) {}
+        
         recognitionRef.current.start();
         console.log("Speech recognition started");
         return true;
-      } catch {
-        // recognition already started or other error
+      } catch (err) {
+        console.error("Speech recognition start failed:", err);
         return false;
       }
     }
@@ -221,7 +223,7 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
   const speak = useCallback(
     async (
       text: string,
-      voiceId: string = "ritu",
+      voiceId: string = "shubh",
     ): Promise<void> => {
       // Cancel previous speech if any
       if (audioPlayerRef.current) {

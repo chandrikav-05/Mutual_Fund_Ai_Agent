@@ -63,10 +63,17 @@ export const sendChatMessage = async (
 };
 
 /**
+ * Reset conversation state on the backend
+ */
+export const resetConversation = async (): Promise<void> => {
+  await apiClient.post("/reset");
+};
+
+/**
  * Get direct TTS audio URL for streaming
  */
 export const getTTSAudioURL = (text: string, voiceId?: string): string => {
-  return `${API_BASE_URL}/tts?text=${encodeURIComponent(text)}&voice_id=${voiceId || "ritu"}`;
+  return `${API_BASE_URL}/tts?text=${encodeURIComponent(text)}&voice_id=${voiceId || "shubh"}`;
 };
 
 /**
