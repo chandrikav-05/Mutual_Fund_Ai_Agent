@@ -14,7 +14,7 @@ load_dotenv()
 
 SARVAM_AI_API_KEY = os.getenv("SARVAM_AI_API_KEY")
 VOICE_MALE = "shubh"
-VOICE_FEMALE = "shubh" # Set to shubh as per user request
+VOICE_FEMALE = "ritu" # Set to ritu for Isha as per user request
 
 # Global state to track conversation phase
 # Detailed Phases for sequential flow
@@ -45,33 +45,33 @@ SCRIPT = {
     
     # Phase 2: SIP Details
     "sip details": {
-        "text": "Thank you. I see that your SIP of ₹5,000 in the ********* Large and Mid Cap Fund was stopped on 10th January 2026 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
+        "text": "Thank you. I see that your SIP of ₹5,000 in the ******* Large and Mid Cap Fund was stopped on 25th March 2025 because the SIP tenure was completed. Your investments have done well, but since the SIP has stopped, you may be missing the benefit of rupee-cost averaging and long-term compounding. Would you like to re-initiate your SIP for long-term wealth creation?",
         "voice": VOICE_MALE,
         "next_state": "SIP_DETAILS"
     },
 
     # Phase 3: Performance
-    "fiveyear performance": {
-        "text": "Sure, Chandrika. The ********* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
+    "five year performance": {
+        "text": "Sure, Chandrika. The ******* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
         "voice": VOICE_MALE,
         "next_state": "PERFORMANCE"
     },
     "performance of this fund": {
-        "text": "Sure, Chandrika. The ********* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
+        "text": "Sure, Chandrika. The ******* Large and Mid Cap Fund has delivered an average return of around 25% over the last five years.",
         "voice": VOICE_MALE,
         "next_state": "PERFORMANCE"
     },
 
     # Phase 4: Better Returns
     "better returns": {
-        "text": "Good question. Some ******** funds have performed even better. For example, the ******** Mid Cap Fund has delivered an average return of about 32% over five years, and the ******** Small Cap Fund has given approximately 35% during the same period. Would you like to split your investment between these two?",
+        "text": "Good question. Some ******* funds have performed even better. For example, the ******* Mid Cap Fund has delivered an average return of around 32%, and the ******* Small Cap Fund has delivered approximately 35% over the same period.",
         "voice": VOICE_MALE,
         "next_state": "BETTER_RETURNS"
     },
 
     # Phase 5: Split Investment
     "split it": {
-        "text": "Yes, Chandrika. Just to confirm, you want to invest ₹2,500 in the ********* Small Cap Fund and ₹2,500 in the ********* Mid Cap Fund as a monthly SIP, correct?",
+        "text": "Yes, Chandrika. Just to confirm, you want to invest ₹2,500 in the ******* Small Cap Fund and ₹2,500 in the ******* Mid Cap Fund as a monthly SIP, correct?",
         "voice": VOICE_MALE,
         "next_state": "SPLIT_CONFIRMATION"
     },
@@ -85,15 +85,15 @@ SCRIPT = {
 
     # Phase 7: Direct Investor
     "process initiation": {
-        "text": "Perfect. I will go ahead and start the process of re-initiating your SIP. I have placed the request to start a SIP of ₹2,500 in the ******** Small Cap Fund and ₹2,500 in the ******** Mid Cap Fund. I will also send these details clearly to your WhatsApp. Please check them and confirm once you receive them.",
+        "text": "Perfect. I will go ahead and start the process of re-initiating your SIP. I have placed the request to start a SIP of ₹2,500 in the ******* Small Cap Fund and ₹2,500 in the ******* Mid Cap Fund. I will also send these details clearly to your WhatsApp or email. Please check them and confirm once you receive them.",
         "voice": VOICE_MALE,
         "show_notification": True,
         "next_state": "PROCESS_INITIATED",
         "notification_data": {
             "title": "SIP Reactivation Details",
             "items": [
-                {"fund": "******** Small Cap Fund", "amount": "₹2,500", "type": "Monthly SIP"},
-                {"fund": "******** Mid Cap Fund", "amount": "₹2,500", "type": "Monthly SIP"}
+                {"fund": "******* Small Cap Fund", "amount": "₹2,500", "type": "Monthly SIP"},
+                {"fund": "******* Mid Cap Fund", "amount": "₹2,500", "type": "Monthly SIP"}
             ],
             "total": "₹5,000/month"
         }
@@ -101,7 +101,7 @@ SCRIPT = {
 
     # Phase 7A: WhatsApp Confirmation
     "whatsapp confirmation": {
-        "text": "Thank you, Chandrika. Just a quick reminder — mutual fund investments are subject to market risks. Please read all scheme-related documents carefully. Will you do that?",
+        "text": "Thank you, Chandrika. Just a quick reminder — mutual fund investments are subject to market risks. Please read all scheme-related documents carefully.",
         "voice": VOICE_MALE,
         "next_state": "WHATSAPP_CONFIRMED"
     },
@@ -115,21 +115,21 @@ SCRIPT = {
 
     # Phase 8: Power of Compounding
     "power of compounding": {
-        "text": "Sure. The power of compounding means your investment earns returns, and then those returns also start earning more returns. Over time, this creates exponential growth instead of linear growth. This is why staying invested for longer periods helps build significant wealth. Anything else you want to ask?",
+        "text": "Sure. The power of compounding means your investment earns returns, and then those returns also start earning more returns. Over time, this creates exponential growth instead of linear growth. This is why staying invested for longer periods helps build significant wealth. Is there anything else you would like to ask?",
         "voice": VOICE_MALE,
         "next_state": "COMPOUNDING"
     },
 
     # Phase 9: Handoff
     "handoff announcement": {
-        "text": "Alright, Chandrika. I will now connect this call to one of our AI wealth advisors who will register your details and complete the SIP activation.",
+        "text": "Alright, Chandrika. I will now connect this call to one of our ai wealth advisors who will register your details and complete the SIP activation.",
         "voice": VOICE_MALE,
         "next_state": "HANDOFF"
     },
 
     # Phase 10: Transfer → Isha
     "transfer to isha": {
-        "text": "Please stay on the line. Your call is being transferred to an AI agent who will confirm your registration details. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from ********** Mutual Fund. How are you today?",
+        "text": "Please stay on the line. Your call is being transferred to a human agent. ||| Hello {name}, this is Isha, a SEBI-certified wealth advisor from ********** Mutual Fund. How are you today?",
         "voice": VOICE_FEMALE,
         "next_state": "ISHA_GREETING"
     },
@@ -152,7 +152,9 @@ SCRIPT = {
 
 def normalize(text):
     text = text.lower()
-    text = text.translate(str.maketrans('', '', string.punctuation))
+    # Replace punctuation with spaces to avoid merging words (e.g. five-year -> five year)
+    translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
+    text = text.translate(translator)
     return " ".join(text.split())
 
 NORMALIZED_SCRIPT = {normalize(k): v for k, v in SCRIPT.items()}
@@ -219,12 +221,12 @@ def chat(user: UserQuery):
             lookup_key = "sip details"
     
     elif CONVERSATION_STATE == "SIP_DETAILS":
-        if any(w in processed_input for w in ["yes", "reinitiate", "wealth creation", "start", "restart"]):
-            lookup_key = "investor type"
-        elif "performance" in processed_input:
-            lookup_key = "fiveyear performance"
+        if "performance" in processed_input:
+            lookup_key = "five year performance"
         elif "better" in processed_input:
             lookup_key = "better returns"
+        elif any(w in processed_input for w in ["yes", "reinitiate", "wealth creation", "start", "restart"]):
+            lookup_key = "investor type"
             
     elif CONVERSATION_STATE == "PERFORMANCE":
         if any(w in processed_input for w in ["better", "more", "other"]):

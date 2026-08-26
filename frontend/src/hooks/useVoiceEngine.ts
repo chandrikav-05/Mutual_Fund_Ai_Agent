@@ -220,6 +220,41 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
     setState((prev) => ({ ...prev, isListening: false }));
   }, []);
 
+  const playBeepLocal = useCallback(async (): Promise<void> => {
+    return new Promise((resolve) => {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) { resolve(); return; }
+        
+        // Reuse or create context
+        const ctx = audioContextRef.current || new AudioContextClass();
+        audioContextRef.current = ctx;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(800, ctx.currentTime); // Standard beep frequency
+        
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.01);
+        gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.15);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start();
+        setTimeout(() => {
+          try { osc.stop(); } catch(e) {}
+          resolve();
+        }, 200);
+      } catch (error) {
+        console.error("Error playing beep:", error);
+        resolve();
+      }
+    });
+  }, []);
+
   const speak = useCallback(
     async (
       text: string,
@@ -234,36 +269,50 @@ export function useVoiceEngine(callbacks: VoiceEngineCallbacks = {}) {
       setState((prev) => ({ ...prev, isSpeaking: true }));
 
       try {
-        const audioUrl = getTTSAudioURL(text, voiceId);
-        const audio = new Audio(audioUrl);
-        audioPlayerRef.current = audio;
+        // Split text into parts by asterisk patterns (e.g., *********)
+        // We keep the delimiters to know where to beep
+        const parts = text.split(/(\*+)/);
+        
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          if (!part) continue;
+          
+          if (part.includes('*')) {
+            // Play beep sound for asterisk patterns
+            await playBeepLocal();
+          } else {
+            // Play TTS for regular text
+            // DO NOT trim here to preserve the punctuation/spacing for natural TTS rhythm
+            const audioUrl = getTTSAudioURL(part, voiceId);
+            const audio = new Audio(audioUrl);
+            audioPlayerRef.current = audio;
 
-        return new Promise((resolve) => {
-          audio.onended = () => {
-            setState((prev) => ({ ...prev, isSpeaking: false }));
-            audioPlayerRef.current = null;
-            resolve();
-          };
+            await new Promise((resolve) => {
+              audio.onended = () => {
+                audioPlayerRef.current = null;
+                resolve(null);
+              };
 
-          audio.onerror = (e) => {
-            console.error("Audio playback error:", e);
-            setState((prev) => ({ ...prev, isSpeaking: false }));
-            audioPlayerRef.current = null;
-            resolve();
-          };
+              audio.onerror = (e) => {
+                console.error("Audio playback error:", e);
+                audioPlayerRef.current = null;
+                resolve(null);
+              };
 
-          audio.play().catch(err => {
-            console.error("Audio play error:", err);
-            setState((prev) => ({ ...prev, isSpeaking: false }));
-            resolve();
-          });
-        });
+              audio.play().catch(err => {
+                console.warn("Audio play error (likely interrupted):", err);
+                resolve(null);
+              });
+            });
+          }
+        }
       } catch (error) {
-        console.error("TTS fetch error:", error);
+        console.error("TTS sequence error:", error);
+      } finally {
         setState((prev) => ({ ...prev, isSpeaking: false }));
       }
     },
-    [],
+    [playBeepLocal],
   );
 
   const stopSpeaking = useCallback(() => {

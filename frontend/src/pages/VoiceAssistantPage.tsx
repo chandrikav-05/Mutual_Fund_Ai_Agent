@@ -221,7 +221,7 @@ export function VoiceAssistantPage() {
             await voiceEngineRef.current?.playRingbackTone();
 
             // Initial greeting message
-            const greeting = "Good morning. I'm Shubh calling from ********** Mutual Fund regarding your investment. Am i Speaking with Chandrika?";
+            const greeting = "Good morning, ma’am. This is Rudraksh calling from ******* Mutual Fund  . Am i speaking with Chandrika.";
             typeWriter(greeting);
             setOrbStatus('Speaking...');
             setAppState('speaking');

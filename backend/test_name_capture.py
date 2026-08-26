@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = "http://127.0.0.1:8002"
 
 def test_chat(question, user_name=None):
     payload = {"question": question}
